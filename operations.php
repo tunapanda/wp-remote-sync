@@ -5,5 +5,82 @@ require_once __DIR__."/utils.php";
 function rsPull() {
 	rsJobLog("Pulling remote changes...");
 
-	rsRemoteCall("list");
+	$remoteInfos=rsRemoteCall("list");
+
+	rsJobLog("The remote site has ".sizeof($remoteInfos)." post(s).");
+
+	foreach ($remoteInfos as $remoteInfo) {
+		if (!$remoteInfo["_rs_id"])
+			throw new Exception("The remote content doesn't have an id.");
+
+		$q=new WP_Query(array(
+			"meta_key"=>"_rs_id",
+			"meta_value"=>$remoteInfo["_rs_id"],
+			"post_type"=>"any",
+			"post_status"=>"any"
+		));
+
+		// Exists locally.
+		if ($q->have_posts()) {
+			$posts=$q->get_posts();
+			if (sizeof($posts)!=1)
+				throw new Exception("Expected 1 post.");
+
+			$post=$posts[0];
+			$localRev=get_post_meta($post->ID,"_rs_rev",TRUE);
+			$localBaseRev=get_post_meta($post->ID,"_rs_base_rev",TRUE);
+
+			// Not remotely changed.
+			if ($remoteInfo["_rs_rev"]==$localBaseRev) {
+				rsJobLog("* - ".$remoteInfo["_rs_id"]." ".$post->ID." ".$post->post_title);
+			}
+
+			// Remotely changed.
+			else {
+				$remotePost=rsRemoteCall("getpost",array(
+					"_rs_id"=>$remoteInfo["_rs_id"]
+				));
+
+				// No local changes
+				if ($localRev==$localBaseRev) {
+					$post->post_content=$remotePost["post_content"];
+					wp_update_post($post);
+					rsJobLog("* U ".$remoteInfo["_rs_id"]." ".$post->ID." ".$post->post_title);
+
+					update_post_meta($post->ID,"_rs_rev",$remoteInfo["_rs_rev"]);
+					update_post_meta($post->ID,"_rs_base_rev",$remoteInfo["_rs_rev"]);
+				}
+
+				// Merge
+				else {
+					rsJobLog("* M ".$remoteInfo["_rs_id"]." ".$post->ID." ".$post->post_title);
+				}
+			}
+		}
+
+		// Doesn't exists locally.
+		else {
+			$remotePost=rsRemoteCall("getpost",array(
+				"_rs_id"=>$remoteInfo["_rs_id"]
+			));
+
+			if (!$remotePost)
+				throw new Exception("Unable to fetch remote content");
+
+			$id=wp_insert_post(array(
+				"post_title"=>$remotePost["post_title"],
+				"post_content"=>$remotePost["post_content"],
+				"post_type"=>$remotePost["post_type"]
+			),TRUE);
+
+			if (is_wp_error($id))
+				throw new Exception("Unable to create local content: ".$err->get_error_message());
+
+			update_post_meta($id,"_rs_id",$remotePost["_rs_id"]);
+			update_post_meta($id,"_rs_rev",$remotePost["_rs_rev"]);
+			update_post_meta($id,"_rs_base_rev",$remotePost["_rs_rev"]);
+
+			rsJobLog("* A ".$remotePost["_rs_id"]." ".$id." ".$remotePost["post_title"]);
+		}
+	}
 }

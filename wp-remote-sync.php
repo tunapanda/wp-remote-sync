@@ -90,7 +90,9 @@ function rs_activate() {
 	$pages=get_pages();
 
 	foreach ($pages as $page) {
-		if (!get_post_meta($page->ID,"_rs_id"))
+		$rsId=get_post_meta($pageId,"_rs_id",TRUE);
+
+		if (!$rsId)
 			update_post_meta($page->ID,"_rs_id",uniqid());
 
 		update_post_meta($page->ID,"_rs_rev",uniqid());
@@ -103,7 +105,13 @@ register_activation_hook(__FILE__,'rs_activate');
  * Page saved.
  */
 function rs_save_post($pageId) {
-	if (!get_post_meta($pageId,"_rs_id"))
+	if (wp_is_post_revision($pageId))
+		return;
+
+	if (wp_is_post_autosave($pageId))
+		return;
+
+	if (!get_post_meta($pageId,"_rs_id",TRUE))
 		update_post_meta($pageId,"_rs_id",uniqid());
 
 	update_post_meta($pageId,"_rs_rev",uniqid());

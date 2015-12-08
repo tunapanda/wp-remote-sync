@@ -58,7 +58,7 @@ function rsJobDone() {
  * Make a call to the api on the remote site.
  */
 function rsRemoteCall($method, $args=array()) {
-	rsJobLog("Calling remote: ".$method);
+	//rsJobLog("Calling remote: ".$method);
 
 	$args["action"]=$method;
 
@@ -69,12 +69,19 @@ function rsRemoteCall($method, $args=array()) {
 	$url.="/wp-content/plugins/wp-remote-sync/api.php";
 	$url.="?".http_build_query($args);
 
-	rsJobLog($url);
+	//rsJobLog($url);
 
 	$curl=curl_init($url);
 	curl_setopt($curl,CURLOPT_RETURNTRANSFER,TRUE);
 	$res=curl_exec($curl);
 
-//	rsJobLog("hello"); //print_r($res);*/
-	print_r($res);
+	if (curl_getinfo($curl,CURLINFO_HTTP_CODE)!=200)
+		throw new Exception("Unexpected return code... ".$res);
+
+	$res=json_decode($res,TRUE);
+
+	if (!$res)
+		throw new Exception("Unable to parse json... ".$res);
+
+	return $res;
 }

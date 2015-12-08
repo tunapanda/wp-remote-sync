@@ -25,8 +25,8 @@ switch ($_REQUEST["action"]) {
 
 		foreach ($pages as $page) {
 			$res[]=array(
-				"id"=>get_post_meta($page->ID,"_rs_id",TRUE),
-				"rev"=>get_post_meta($page->ID,"_rs_rev",TRUE)
+				"_rs_id"=>get_post_meta($page->ID,"_rs_id",TRUE),
+				"_rs_rev"=>get_post_meta($page->ID,"_rs_rev",TRUE)
 			);
 		}
 
@@ -36,7 +36,7 @@ switch ($_REQUEST["action"]) {
 	case "getpost":
 		$posts=get_posts(array(
 			"meta_key"=>"_rs_id",
-			"meta_value"=>$_REQUEST["id"],
+			"meta_value"=>$_REQUEST["_rs_id"],
 			"post_type"=>"page"
 		));
 		if (sizeof($posts)!=1)
@@ -45,8 +45,9 @@ switch ($_REQUEST["action"]) {
 		$post=$posts[0];
 
 		$res=array(
-			"title"=>$post->post_title,
-			"content"=>$post->post_content,
+			"post_title"=>$post->post_title,
+			"post_content"=>$post->post_content,
+			"post_type"=>$post->post_type,
 			"_rs_id"=>get_post_meta($post->ID,"_rs_id",TRUE),
 			"_rs_rev"=>get_post_meta($post->ID,"_rs_rev",TRUE)
 		);
@@ -66,12 +67,12 @@ switch ($_REQUEST["action"]) {
 		if (!$_REQUEST["_rs_rev"])
 			throw new Exception("Expected revision");
 
-		if (!$_REQUEST["_rs_baserev"])
+		if (!$_REQUEST["_rs_base_rev"])
 			throw new Exception("Expected base revision");
 
 		$post=$posts[0];
 		$currentRev=get_post_meta($post->ID,"_rs_rev",TRUE);
-		if ($currentRev!=$_REQUEST["_rs_baserev"])
+		if ($currentRev!=$_REQUEST["_rs_base_rev"])
 			throw new Exception("Not up to date, merge first, my rev=".$currentRev);
 
 		echo "implement me!";
