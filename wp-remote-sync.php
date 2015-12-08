@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__."/utils.php";
+
 /*
 Plugin Name: Remote Sync
 Plugin URI: http://github.com/tunapanda/wp-remote-sync
@@ -18,6 +20,15 @@ function rs_admin_menu() {
 		'rs_settings',
 		'rs_create_settings_page'
 	);
+
+	add_submenu_page(
+		'options.php',
+		'Remote Sync Operations',
+		'Remote Sync Operations',
+		'manage_options',
+		'rs_operations',
+		'rs_create_operations_page'
+	);
 }
 
 /**
@@ -32,6 +43,27 @@ function rs_admin_init() {
  */
 function rs_create_settings_page() {
 	require_once __DIR__."/settings.php";
+}
+
+/**
+ * Create operations page.
+ */
+function rs_create_operations_page() {
+	require_once __DIR__."/operations.php";
+	jobStart();
+
+	$action=$_REQUEST["action"];
+
+	jobLog("Running ".$action);
+
+	jobLog("hello");
+	sleep(1);
+	jobLog("hello");
+	sleep(1);
+	jobLog("hello");
+	sleep(1);
+	jobLog("hello");
+	sleep(1);
 }
 
 add_action('admin_menu','rs_admin_menu');

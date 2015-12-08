@@ -32,14 +32,17 @@
         and pushing information. On the site acting as the "remote", you don't need to do anything
         other than install this plugin.
     </p>
-    <p class="submit">
-        <input type="submit" name="status" id="status_button" class="button" value="Status">
-        Show information about the current differences between this site and the remote site.<br/><br/>
-        <input type="submit" name="status" id="pull_button" class="button" value="Pull">
-        Pull remote changes and apply them to this site.<br/><br/>
-        <input type="submit" name="status" id="push_button" class="button" value="Push">
-        Push local changes up to the remote site.<br/><br/>
-        <input type="submit" name="status" id="sync_button" class="button" value="Sync">
-        Pull remote changes, then push local changes.<br/><br/>
-    </p>
+    <form method="get" action="options.php">
+        <input type="hidden" name="page" value="rs_operations"/>
+        <p class="submit">
+            <input type="submit" name="action" id="status_button" class="button" value="Status">
+            Show information about the current differences between this site and the remote site.<br/><br/>
+            <input type="submit" name="action" id="pull_button" class="button" value="Pull">
+            Pull remote changes and apply them to this site.<br/><br/>
+            <input type="submit" name="action" id="push_button" class="button" value="Push">
+            Push local changes up to the remote site.<br/><br/>
+            <input type="submit" name="action" id="sync_button" class="button" value="Sync">
+            Pull remote changes, then push local changes.<br/><br/>
+        </p>
+    </form>
 </div>
