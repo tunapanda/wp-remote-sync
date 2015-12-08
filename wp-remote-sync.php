@@ -68,3 +68,31 @@ function rs_create_operations_page() {
 
 add_action('admin_menu','rs_admin_menu');
 add_action('admin_init','rs_admin_init');
+
+/**
+ * Activation hook.
+ */
+function rs_activate() {
+	$pages=get_pages();
+
+	foreach ($pages as $page) {
+		if (!get_post_meta($page->ID,"_rs_id"))
+			update_post_meta($page->ID,"_rs_id",uniqid());
+
+		update_post_meta($page->ID,"_rs_rev",uniqid());
+	}
+}
+
+register_activation_hook(__FILE__,'rs_activate');
+
+/**
+ * Page saved.
+ */
+function rs_save_post($pageId) {
+	if (!get_post_meta($pageId,"_rs_id"))
+		update_post_meta($pageId,"_rs_id",uniqid());
+
+	update_post_meta($pageId,"_rs_rev",uniqid());
+}
+
+add_action('save_post','rs_save_post');
