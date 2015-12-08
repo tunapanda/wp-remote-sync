@@ -3,8 +3,6 @@
     <p>
         This plugin lets you sync content with a remote site, like a 
         distributed version control system.<br/><br/>
-
-        <?php echo plugins_url(); ?>
     </p>
 
     <h3>Settings</h3>
