@@ -1,8 +1,9 @@
-<div class="wrap">
-    <h2>Remote Sync</h2>
-    <p>
-        This plugin lets you sync content with a remote site in a similar way as a 
-        distributed version control system.<br/><br/>
-    </p>
-</div>
-<hr/>
+<?php
+
+require_once __DIR__."/utils.php";
+
+function rsPull() {
+	rsJobLog("Pulling remote changes...");
+
+	rsRemoteCall("list");
+}

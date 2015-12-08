@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__."/utils.php";
+require_once __DIR__."/operations.php";
 
 /*
 Plugin Name: Remote Sync
@@ -42,28 +43,41 @@ function rs_admin_init() {
  * Create settings page.
  */
 function rs_create_settings_page() {
-	require_once __DIR__."/settings.php";
+	require __DIR__."/settingspage.php";
+}
+
+/**
+ * Handle exceptions during an operation.
+ */
+function rsOperationExceptionHandler($exception) {
+	rsJobLog("** Error **");
+	rsJobLog($exception->getMessage());
+	rsJobDone();
+	exit();
 }
 
 /**
  * Create operations page.
  */
 function rs_create_operations_page() {
-	require_once __DIR__."/operations.php";
-	jobStart();
+	require __DIR__."/operationspage.php";
+	rsJobStart();
+
+	set_exception_handler("rsOperationExceptionHandler");
 
 	$action=$_REQUEST["action"];
 
-	jobLog("Running ".$action);
+	switch ($action) {
+		case "Pull":
+			rsPull();
+			break;
 
-	jobLog("hello");
-	sleep(1);
-	jobLog("hello");
-	sleep(1);
-	jobLog("hello");
-	sleep(1);
-	jobLog("hello");
-	sleep(1);
+		default:
+			rsJobLog("Unknown operation: ".$action);
+			break;
+	}
+
+	rsJobDone();
 }
 
 add_action('admin_menu','rs_admin_menu');
