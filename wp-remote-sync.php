@@ -37,6 +37,7 @@ function rs_admin_menu() {
  */
 function rs_admin_init() {
 	register_setting("rs","rs_remote_site_url");
+	register_setting("rs","rs_merge_strategy");
 }
 
 /**
@@ -70,6 +71,10 @@ function rs_create_operations_page() {
 	switch ($action) {
 		case "Pull":
 			rsPull();
+			break;
+
+		case "Push":
+			rsPush();
 			break;
 
 		default:

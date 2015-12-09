@@ -1,0 +1,3 @@
+[submodule "ext/merge3"]
+	path = ext/merge3
+	url = https://github.com/luqui/merge3.git

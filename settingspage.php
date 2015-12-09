@@ -11,12 +11,30 @@
         <?php do_settings_sections( 'rs' ); ?>
         <table class="form-table">
             <tr valign="top">
-                <th scope="row">Remote Site Url</th>
+                <th scope="row">Remote site url</th>
                 <td>
                     <input type="text" name="rs_remote_site_url" 
                         value="<?php echo esc_attr(get_option("rs_remote_site_url")); ?>" 
                         class="regular-text"/>
                     <p class="description">This is the remote site to pull changes from and push changes to.</p>
+                </td>
+            </tr>
+            <tr valign="top">
+                <th scope="row">Merge strategy</th>
+                <td>
+                    <select name="rs_merge_strategy">
+                        <option value="prioritize_remote"
+                            <?php if (get_option("rs_merge_strategy")=="prioritize_remote") { ?>
+                                selected
+                            <?php } ?>
+                        >Proiritize remote content</option>
+                        <option value="prioritize_local"
+                            <?php if (get_option("rs_merge_strategy")=="prioritize_local") { ?>
+                                selected
+                            <?php } ?>
+                        >Proiritize local content</option>
+                    </select>
+                    <p class="description">In the rare event of merge conflicts, how should the merge be done?</p>
                 </td>
             </tr>
         </table>

@@ -75,11 +75,15 @@ switch ($_REQUEST["action"]) {
 		if ($currentRev!=$_REQUEST["_rs_base_rev"])
 			throw new Exception("Not up to date, merge first, my rev=".$currentRev);
 
-		echo "implement me!";
+		$post->post_content=$_REQUEST["post_content"];
+		wp_update_post($post);
+		update_post_meta($post->ID,"_rs_rev",$_REQUEST["_rs_rev"]);
+		echo json_encode(array(
+			"ok"=>1
+		));
 		break;
 
 	default:
 		echo "unknown api action";
 		return;
 }
-

@@ -74,9 +74,10 @@ function rsRemoteCall($method, $args=array()) {
 	$curl=curl_init($url);
 	curl_setopt($curl,CURLOPT_RETURNTRANSFER,TRUE);
 	$res=curl_exec($curl);
+	$returnCode=curl_getinfo($curl,CURLINFO_HTTP_CODE);
 
-	if (curl_getinfo($curl,CURLINFO_HTTP_CODE)!=200)
-		throw new Exception("Unexpected return code... ".$res);
+	if ($returnCode!=200)
+		throw new Exception("Unexpected return code: ".$returnCode."\n".$res);
 
 	$res=json_decode($res,TRUE);
 
