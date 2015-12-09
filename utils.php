@@ -79,10 +79,10 @@ function rsRemoteCall($method, $args=array()) {
 	if ($returnCode!=200)
 		throw new Exception("Unexpected return code: ".$returnCode."\n".$res);
 
-	$res=json_decode($res,TRUE);
+	$parsedRes=json_decode($res,TRUE);
 
-	if (!$res)
+	if (!$parsedRes)
 		throw new Exception("Unable to parse json... ".$res);
 
-	return $res;
+	return $parsedRes;
 }

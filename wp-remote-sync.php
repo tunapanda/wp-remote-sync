@@ -100,12 +100,16 @@ add_action('admin_init','rs_admin_init');
  * Activation hook.
  */
 function rs_activate() {
-	$pages=get_pages();
+	$q=new WP_Query(array(
+		"post_type"=>"any",
+		"post_status"=>"any",
+		"posts_per_page"=>-1
+	));
+
+	$pages=$q->get_posts();
 
 	foreach ($pages as $page) {
-		$rsId=get_post_meta($pageId,"_rs_id",TRUE);
-
-		if (!$rsId)
+		if (!get_post_meta($page->ID,"_rs_id",TRUE))
 			update_post_meta($page->ID,"_rs_id",uniqid());
 
 		update_post_meta($page->ID,"_rs_rev",uniqid());

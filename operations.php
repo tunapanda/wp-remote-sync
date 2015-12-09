@@ -49,7 +49,8 @@ function rsStatus() {
 
 	$q=new WP_Query(array(
 		"post_type"=>"any",
-		"post_status"=>"any"
+		"post_status"=>"any",
+		"posts_per_page"=>-1
 	));
 
 	$posts=$q->get_posts();
@@ -77,6 +78,9 @@ function rsStatus() {
 		$post->_rs_rev=$rev;
 		$post->_rs_base_rev=$baseRev;
 
+		if ($localPostByRsId[$rsId])
+			throw new Exception("Duplicate rs id");
+
 		$localPostByRsId[$rsId]=$post;
 	}
 
@@ -87,6 +91,9 @@ function rsStatus() {
 	$remoteInfos=rsRemoteCall("list");
 	foreach ($remoteInfos as $remoteInfo) {
 		$localPost=$localPostByRsId[$remoteInfo["_rs_id"]];
+
+		/*print_r($remoteInfo);
+		echo $localPost->ID."<br>";*/
 
 		if (!$localPost)
 			$newRemote++;
@@ -115,7 +122,8 @@ function rsPush() {
 
 	$q=new WP_Query(array(
 		"post_type"=>"any",
-		"post_status"=>"any"
+		"post_status"=>"any",
+		"posts_per_page"=>-1
 	));
 
 	$posts=$q->get_posts();
@@ -130,9 +138,17 @@ function rsPush() {
 
 		// New
 		if (!$rsBaseRev) {
+			rsRemoteCall("addpost",array(
+				"_rs_id"=>$rsId,
+				"_rs_rev"=>$rsRev,
+				"post_content"=>$post->post_content,
+				"post_title"=>$post->post_title
+			));
+			update_post_meta($post->ID,"_rs_base_rev",$rsRev);
 			rsJobLog("* A ".$rsId." ".$post->ID." ".$post->post_title);
 		}
 
+		// Update
 		else if ($rsRev!=$rsBaseRev) {
 			rsRemoteCall("putpost",array(
 				"_rs_id"=>$rsId,
