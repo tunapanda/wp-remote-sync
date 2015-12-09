@@ -77,6 +77,14 @@ function rs_create_operations_page() {
 			rsPush();
 			break;
 
+		case "Status":
+			rsStatus();
+			break;
+
+		case "Sync":
+			rsSync();
+			break;
+
 		default:
 			rsJobLog("Unknown operation: ".$action);
 			break;

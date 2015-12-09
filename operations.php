@@ -17,6 +17,7 @@ function rsMerge($base, $local, $remote) {
 			case 'orig':
 			case 'addright':
 			case 'addleft':
+			case 'addboth':
 				$res.=$mergeRecord[1]."\n";
 				break;
 
@@ -41,6 +42,72 @@ function rsMerge($base, $local, $remote) {
 	}
 
 	return $res;
+}
+
+function rsStatus() {
+	rsJobLog("Status...");
+
+	$q=new WP_Query(array(
+		"post_type"=>"any",
+		"post_status"=>"any"
+	));
+
+	$posts=$q->get_posts();
+	$newLocal=0;
+	$updatedLocal=0;
+	$localPostByRsId=array();
+
+	foreach ($posts as $post) {
+		$rsId=get_post_meta($post->ID,"_rs_id",TRUE);
+		$rev=get_post_meta($post->ID,"_rs_rev",TRUE);
+		$baseRev=get_post_meta($post->ID,"_rs_base_rev",TRUE);
+
+		if (!$rsId)
+			throw new Exception("Local content doesn't have an id!");
+
+		if (!$rev)
+			throw new Exception("Local content doesn't have a rev!");
+
+		if (!$baseRev)
+			$newLocal++;
+
+		else if ($rev!=$baseRev)
+			$updatedLocal++;
+
+		$post->_rs_rev=$rev;
+		$post->_rs_base_rev=$baseRev;
+
+		$localPostByRsId[$rsId]=$post;
+	}
+
+	$newRemote=0;
+	$updatedRemote=0;
+	$needsMerging=0;
+
+	$remoteInfos=rsRemoteCall("list");
+	foreach ($remoteInfos as $remoteInfo) {
+		$localPost=$localPostByRsId[$remoteInfo["_rs_id"]];
+
+		if (!$localPost)
+			$newRemote++;
+
+		else if ($remoteInfo["_rs_rev"]!=$localPost->_rs_base_rev) {
+			$updatedRemote++;
+
+			if ($localPost->_rs_base_rev!=$localPost->_rs_rev)
+				$needsMerging++;
+		}
+	}
+
+	rsJobLog("Total local posts:             ".sizeof($posts));
+	rsJobLog("Total remote posts:            ".sizeof($remoteInfos));
+	rsJobLog("New local posts:               ".$newLocal);
+	rsJobLog("New remote posts:              ".$newRemote);
+	/*rsJobLog("Deleted local posts:           ".$deletedLocal);
+	rsJobLog("Deleted remote posts:          ".$deletedRemote);*/
+	rsJobLog("Updated local posts:           ".$updatedLocal);
+	rsJobLog("Updated remote posts:          ".$updatedRemote);
+	rsJobLog("Needs merging:                 ".$needsMerging);
 }
 
 function rsPush() {
@@ -87,7 +154,7 @@ function rsPull() {
 
 	$remoteInfos=rsRemoteCall("list");
 
-	rsJobLog("The remote site has ".sizeof($remoteInfos)." post(s).");
+	//rsJobLog("The remote site has ".sizeof($remoteInfos)." post(s).");
 
 	foreach ($remoteInfos as $remoteInfo) {
 		if (!$remoteInfo["_rs_id"])
@@ -112,7 +179,7 @@ function rsPull() {
 
 			// Not remotely changed.
 			if ($remoteInfo["_rs_rev"]==$localBaseRev) {
-				rsJobLog("* - ".$remoteInfo["_rs_id"]." ".$post->ID." ".$post->post_title);
+				//rsJobLog("* - ".$remoteInfo["_rs_id"]." ".$post->ID." ".$post->post_title);
 			}
 
 			// Remotely changed.
@@ -174,4 +241,9 @@ function rsPull() {
 			rsJobLog("* A ".$remotePost["_rs_id"]." ".$id." ".$remotePost["post_title"]);
 		}
 	}
+}
+
+function rsSync() {
+	rsPull();
+	rsPush();
 }

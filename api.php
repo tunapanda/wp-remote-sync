@@ -75,7 +75,7 @@ switch ($_REQUEST["action"]) {
 		if ($currentRev!=$_REQUEST["_rs_base_rev"])
 			throw new Exception("Not up to date, merge first, my rev=".$currentRev);
 
-		$post->post_content=$_REQUEST["post_content"];
+		$post->post_content=stripslashes($_REQUEST["post_content"]);
 		wp_update_post($post);
 		update_post_meta($post->ID,"_rs_rev",$_REQUEST["_rs_rev"]);
 		echo json_encode(array(
