@@ -135,3 +135,13 @@ function rs_save_post($pageId) {
 }
 
 add_action('save_post','rs_save_post');
+
+/**
+ * Page trashed.
+ */
+function rs_trash_post($pageId) {
+//	exit("trash post callback: ".$pageId);
+	update_post_meta($pageId,"_rs_rev",uniqid());
+}
+
+add_action('wp_trash_post','rs_trash_post');

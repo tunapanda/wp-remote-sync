@@ -19,6 +19,30 @@ function handleException($exception) {
 set_exception_handler("handleException");
 
 switch ($_REQUEST["action"]) {
+	case "delpost":
+		$q=new WP_Query(array(
+			"post_type"=>"any",
+			"post_status"=>"any",
+			"meta_key"=>"_rs_id",
+			"meta_value"=>$_REQUEST["_rs_id"],
+			"posts_per_page"=>-1
+		));
+		$posts=$q->get_posts();
+		if (!sizeof($posts)) {
+			echo json_encode(array(
+				"ok"=>1
+			));
+			return;
+		}
+
+		$post=$posts[0];
+		wp_trash_post($post->ID);
+		update_post_meta($post->ID,"_rs_rev",$_REQUEST["_rs_rev"]);
+		echo json_encode(array(
+			"ok"=>1
+		));
+		break;
+
 	case "list":
 		$q=new WP_Query(array(
 			"post_type"=>"any",
