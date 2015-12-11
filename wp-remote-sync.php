@@ -1,7 +1,6 @@
 <?php
 
-require_once __DIR__."/utils.php";
-require_once __DIR__."/operations.php";
+require_once __DIR__."/src/plugin/RemoteSyncPlugin.php";
 
 /*
 Plugin Name: Remote Sync
@@ -44,7 +43,7 @@ function rs_admin_init() {
  * Create settings page.
  */
 function rs_create_settings_page() {
-	require __DIR__."/settingspage.php";
+	require __DIR__."/tpl/settings.tpl.php";
 }
 
 /**
@@ -61,36 +60,10 @@ function rsOperationExceptionHandler($exception) {
  * Create operations page.
  */
 function rs_create_operations_page() {
-	require __DIR__."/operationspage.php";
-	rsJobStart();
+	require __DIR__."/tpl/operations.tpl.php";
 
-	set_exception_handler("rsOperationExceptionHandler");
-
-	$action=$_REQUEST["action"];
-
-	switch ($action) {
-		case "Pull":
-			rsPull();
-			break;
-
-		case "Push":
-			rsPush();
-			break;
-
-		case "Status":
-			rsStatus();
-			break;
-
-		case "Sync":
-			rsSync();
-			break;
-
-		default:
-			rsJobLog("Unknown operation: ".$action);
-			break;
-	}
-
-	rsJobDone();
+	$plugin=new RemoteSyncPlugin();
+	$plugin->getOperations()->handleOperation($_REQUEST["action"]);
 }
 
 add_action('admin_menu','rs_admin_menu');
@@ -100,48 +73,43 @@ add_action('admin_init','rs_admin_init');
  * Activation hook.
  */
 function rs_activate() {
-	$q=new WP_Query(array(
-		"post_type"=>"any",
-		"post_status"=>"any",
-		"posts_per_page"=>-1
-	));
+	RemoteSyncPlugin::instance()->install();
+}
 
-	$pages=$q->get_posts();
-
-	foreach ($pages as $page) {
-		if (!get_post_meta($page->ID,"_rs_id",TRUE))
-			update_post_meta($page->ID,"_rs_id",uniqid());
-
-		update_post_meta($page->ID,"_rs_rev",uniqid());
-	}
+/**
+ * Uninstall.
+ */
+function rs_uninstall() {
+	SyncResource::uninstall();
 }
 
 register_activation_hook(__FILE__,'rs_activate');
+register_uninstall_hook(__FILE__,'rs_uninstall');
 
 /**
- * Page saved.
+ * Post saved.
  */
-function rs_save_post($pageId) {
-	if (wp_is_post_revision($pageId))
+function rs_save_post($id) {
+	if (wp_is_post_revision($id))
 		return;
 
-	if (wp_is_post_autosave($pageId))
+	if (wp_is_post_autosave($id))
 		return;
 
-	if (!get_post_meta($pageId,"_rs_id",TRUE))
-		update_post_meta($pageId,"_rs_id",uniqid());
+	$status=get_post_status($id);
+	if ($status=="auto-draft")
+		return;
 
-	update_post_meta($pageId,"_rs_rev",uniqid());
+	RemoteSyncPlugin::instance()->getSyncerByType("post")->notifyLocalChange($id);
 }
 
 add_action('save_post','rs_save_post');
 
 /**
- * Page trashed.
+ * Post trashed.
  */
-function rs_trash_post($pageId) {
-//	exit("trash post callback: ".$pageId);
-	update_post_meta($pageId,"_rs_rev",uniqid());
+function rs_trash_post($id) {
+	RemoteSyncPlugin::instance()->getSyncerByType("post")->notifyLocalChange($id);
 }
 
 add_action('wp_trash_post','rs_trash_post');

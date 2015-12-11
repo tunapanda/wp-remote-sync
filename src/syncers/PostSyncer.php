@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__."/../AResourceSyncer";
+require_once __DIR__."/../plugin/AResourceSyncer.php";
 
 /**
  * Sync wordpress posts.
@@ -39,20 +39,25 @@ class PostSyncer extends AResourceSyncer {
 	public function getResource($localId) {
 		$post=get_post($localId);
 
+		if ($post->post_status=="trash")
+			return NULL;
+
 		return array(
 			"post_title"=>$post->post_title,
-			"post_content"=>$post->post_content
+			"post_content"=>$post->post_content,
+			"post_type"=>$post->post_type
 		);
 	}
 
 	/**
 	 * Update a local resource with data.
 	 */
-	abstract function updateResource($localId, $data) {
+	function updateResource($localId, $data) {
 		$post=get_post($localId);
 
 		$post->post_title=$data["post_title"];
 		$post->post_content=$data["post_content"];
+		$post->post_type=$data["post_type"];
 
 		wp_update_post($post);
 	}
@@ -60,17 +65,18 @@ class PostSyncer extends AResourceSyncer {
 	/**
 	 * Create a local resource.
 	 */
-	abstract function createResource($data) {
-		wp_insert_post(array(
-			"post_data"=>$data["post_data"],
-			"post_title"=>$data["post_title"]
+	function createResource($data) {
+		return wp_insert_post(array(
+			"post_content"=>$data["post_content"],
+			"post_title"=>$data["post_title"],
+			"post_type"=>$data["post_type"]
 		));
 	}
 
 	/**
 	 * Delete a local resource.
 	 */
-	abstract function deleteResource($localId) {
+	function deleteResource($localId) {
 		wp_trash_post($localId);
 	}
 
@@ -84,10 +90,22 @@ class PostSyncer extends AResourceSyncer {
 	/**
 	 * Merge resource data.
 	 */
-	abstract function mergeResourceData($base, $local, $remote) {
+	function mergeResourceData($base, $local, $remote) {
+		/*print_r($base);
+		print_r($local);
+		print_r($remote);*/
+
 		return array(
 			"post_content"=>$this->mergeKeyValues("post_content",$base,$local,$remote),
-			"post_title"=>$this->mergeKeyValues("post_title",$base,$local,$remote)
-		)
+			"post_title"=>$this->mergeKeyValues("post_title",$base,$local,$remote),
+			"post_type"=>$this->mergeKeyValues("post_type",$base,$local,$remote)
+		);
+	}
+
+	/**
+	 * Get sync label from data.
+	 */
+	function getResourceLabel($data) {
+		return $data["post_title"];
 	}
 }

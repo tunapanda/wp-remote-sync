@@ -1,3 +1,6 @@
 [submodule "ext/merge3"]
 	path = ext/merge3
 	url = https://github.com/luqui/merge3.git
+[submodule "ext/smartrecord"]
+	path = ext/smartrecord
+	url = https://github.com/limikael/smartrecord.git
