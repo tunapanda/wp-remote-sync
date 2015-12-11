@@ -142,8 +142,13 @@ class RemoteSyncOperations {
 			foreach ($remoteResources as $remoteResource) {
 				$localResource=SyncResource::findOneBy("globalId",$remoteResource->globalId);
 
+				// Skip if it is locally deleted.
+				if ($localResource && $localResource->isDeleted()) {
+					//echo "it is locally deleted!";
+				}
+
 				// Exists locally
-				if ($localResource) {
+				else if ($localResource) {
 					$localId=$localResource->localId;
 
 					// Remotely changed

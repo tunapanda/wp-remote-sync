@@ -47,7 +47,9 @@ abstract class AResourceSyncer {
 			return;
 
 		if ($syncResource && !$this->getResource($localId)) {
-			$syncResource->delete();
+			if (!$syncResource->baseRevision)
+				$syncResource->delete();
+	
 			return;
 		}
 
@@ -101,10 +103,13 @@ abstract class AResourceSyncer {
 	 * Convert local id to global id.
 	 */
 	public function localToGlobal($localId) {
-		$r=SyndResource::findOneBy(array(
+		$r=SyncResource::findOneBy(array(
 			"type"=>$this->type,
 			"localId"=>$localId
 		));
+
+		if (!$r)
+			return NULL;
 
 		return $r->globalId;
 	}
@@ -113,7 +118,10 @@ abstract class AResourceSyncer {
 	 * Convert global id to local id.
 	 */
 	public function globalToLocal($globalId) {
-		$r=SyndResource::findOneBy("globalId",$globalId);
+		$r=SyncResource::findOneBy("globalId",$globalId);
+		if (!$r)
+			return NULL;
+
 		if ($r->type!=$this->type)
 			throw new Exception("Wrong type");
 
