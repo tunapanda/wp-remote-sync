@@ -98,13 +98,6 @@ class PostSyncer extends AResourceSyncer {
 	}
 
 	/**
-	 * Merge key values from objects.
-	 */
-	function mergeKeyValues($key, $base, $local, $remote) {
-		return $this->merge3($base[$key],$local[$key],$remote[$key]);
-	}
-
-	/**
 	 * Merge resource data.
 	 */
 	function mergeResourceData($base, $local, $remote) {
@@ -113,14 +106,14 @@ class PostSyncer extends AResourceSyncer {
 		print_r($remote);*/
 
 		return array(
-			"post_name"=>$this->mergeKeyValues("post_name",$base,$local,$remote),
-			"post_title"=>$this->mergeKeyValues("post_title",$base,$local,$remote),
-			"post_type"=>$this->mergeKeyValues("post_type",$base,$local,$remote),
-			"post_content"=>$this->mergeKeyValues("post_content",$base,$local,$remote),
-			"post_excerpt"=>$this->mergeKeyValues("post_excerpt",$base,$local,$remote),
-			"post_status"=>$this->mergeKeyValues("post_status",$base,$local,$remote),
-			"post_parent"=>$this->mergeKeyValues("post_parent",$base,$local,$remote),
-			"menu_order"=>$this->mergeKeyValues("menu_order",$base,$local,$remote)
+			"post_name"=>$this->mergeKeyValue("post_name",$base,$local,$remote),
+			"post_title"=>$this->mergeKeyValue("post_title",$base,$local,$remote),
+			"post_type"=>$this->pickKeyValue("post_type",$base,$local,$remote),
+			"post_content"=>$this->mergeKeyValue("post_content",$base,$local,$remote),
+			"post_excerpt"=>$this->mergeKeyValue("post_excerpt",$base,$local,$remote),
+			"post_status"=>$this->pickKeyValue("post_status",$base,$local,$remote),
+			"post_parent"=>$this->pickKeyValue("post_parent",$base,$local,$remote),
+			"menu_order"=>$this->pickKeyValue("menu_order",$base,$local,$remote)
 		);
 	}
 

@@ -116,13 +116,11 @@ class AttachmentSyncer extends AResourceSyncer {
 	 */
 	function mergeResourceData($base, $local, $remote) {
 		return array(
-			"post_guid"=>$this->mergeKeyValues("post_guid",$base,$local,$remote),
-			"post_title"=>$this->mergeKeyValues("post_title",$base,$local,$remote),
-			"post_mime_type"=>$this->mergeKeyValues("post_mime_type",$base,$local,$remote),
-//			"_wp_attached_file"=>$this->mergeKeyValues("_wp_attached_file",$base,$local,$remote),
-//			"_wp_attachment_metadata"=>$this->mergeKeyValues("_wp_attachment_metadata",$base,$local,$remote),
-			"_wp_attached_file"=>$base["_wp_attached_file"],
-			"_wp_attachment_metadata"=>$base["_wp_attachment_metadata"]
+			"post_guid"=>$this->pickKeyValues("post_guid",$base,$local,$remote),
+			"post_title"=>$this->pickKeyValues("post_title",$base,$local,$remote),
+			"post_mime_type"=>$this->pickKeyValues("post_mime_type",$base,$local,$remote),
+			"_wp_attached_file"=>$this->pickKeyValue("_wp_attached_file",$base,$local,$remote),
+			"_wp_attachment_metadata"=>$this->pickKeyValue("_wp_attachment_metadata",$base,$local,$remote)
 		);
 	}
 
@@ -131,12 +129,5 @@ class AttachmentSyncer extends AResourceSyncer {
 	 */
 	function getResourceLabel($data) {
 		return $data["post_title"];
-	}
-
-	/**
-	 * Merge key values from objects.
-	 */
-	function mergeKeyValues($key, $base, $local, $remote) {
-		return $this->merge3($base[$key],$local[$key],$remote[$key]);
 	}
 }

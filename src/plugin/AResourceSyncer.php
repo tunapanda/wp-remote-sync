@@ -271,9 +271,40 @@ abstract class AResourceSyncer {
 	}
 
 	/**
-	 * Merge according to priority settings.
+	 * Merge key values from objects.
 	 */
-	public final function merge3($base, $local, $remote) {
+	public final function mergeKeyValue($key, $base, $local, $remote) {
+		return $this->merge($base[$key],$local[$key],$remote[$key]);
+	}
+
+	/**
+	 * Pick a "merged" value depending on settings.
+	 */
+	public function pickKeyValue($key, $base, $local, $remote) {
+		return $this->pick($base[$key],$local[$key],$remote[$key]);
+	}
+
+	/**
+	 * Pick a value depending on changes and configuration.
+	 */
+	public static function pick($base, $local, $remote) {
+		if (get_option("rs_merge_strategy")=="prioritize_local" 
+				&& $local!=$base)
+			return $local;
+
+		if ($remote!=$base)
+			return $remote;
+
+		if ($local!=$base)
+			return $local;
+
+		return $base;
+	}
+
+	/**
+	 * Merge text according to priority settings.
+	 */
+	public final function merge($base, $local, $remote) {
 		$base=explode("\n",$base);
 		$local=explode("\n",$local);
 		$remote=explode("\n",$remote);
@@ -310,6 +341,8 @@ abstract class AResourceSyncer {
 					break;
 			}
 		}
+
+		$res=substr($res,0,strlen($res)-1);
 
 		return $res;
 	}
