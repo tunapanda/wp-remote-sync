@@ -164,6 +164,7 @@ class RemoteSyncOperations {
 							);
 
 							$syncer->updateResource($localId,$merged);
+							$syncer->processAttachments($localId);
 							$localResource->baseRevision=$remoteResource->revision;
 							$localResource->save();
 							$this->job->log("* M {$remoteResource->globalId} $localId $label");
@@ -171,6 +172,7 @@ class RemoteSyncOperations {
 
 						else {
 							$syncer->updateResource($localId,$remoteResource->getData());
+							$syncer->processAttachments($localId);
 							$localResource->baseRevision=$remoteResource->revision;
 							$localResource->revision=$remoteResource->revision;
 							$localResource->save();
@@ -182,6 +184,7 @@ class RemoteSyncOperations {
 				// Doesn't exist locally.
 				else {
 					$localId=$syncer->createResource($remoteResource->getData());
+					$syncer->processAttachments($localId);
 					$localResource=new SyncResource($syncer->getType());
 					$localResource->localId=$localId;
 					$localResource->globalId=$remoteResource->globalId;
@@ -246,7 +249,7 @@ class RemoteSyncOperations {
 						"revision"=>$syncResource->revision,
 						"data"=>json_encode($data),
 						"type"=>$syncResource->type
-					));
+					),$syncResource->getResourceAttachments());
 
 					$syncResource->baseRevision=$syncResource->revision;
 					$syncResource->setBaseData($syncResource->getData());
@@ -264,7 +267,7 @@ class RemoteSyncOperations {
 						"revision"=>$syncResource->revision,
 						"baseRevision"=>$syncResource->baseRevision,
 						"data"=>json_encode($data)
-					));
+					),$syncResource->getResourceAttachments());
 
 					$syncResource->baseRevision=$syncResource->revision;
 					$syncResource->setBaseData($syncResource->getData());

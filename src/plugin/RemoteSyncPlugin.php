@@ -2,6 +2,7 @@
 
 require_once __DIR__."/../utils/Singleton.php";
 require_once __DIR__."/../syncers/PostSyncer.php";
+require_once __DIR__."/../syncers/AttachmentSyncer.php";
 require_once __DIR__."/../controller/RemoteSyncApi.php";
 require_once __DIR__."/../controller/RemoteSyncOperations.php";
 
@@ -26,6 +27,7 @@ class RemoteSyncPlugin extends Singleton {
 		if (!$this->syncers) {
 			$this->syncers=array();
 			$this->syncers[]=new PostSyncer();
+			$this->syncers[]=new AttachmentSyncer();
 		}
 
 		return $this->syncers;
@@ -77,7 +79,7 @@ class RemoteSyncPlugin extends Singleton {
 	/**
 	 * Make a call to the remote.
 	 */
-	public function remoteCall($method, $args=array()) {
+	public function remoteCall($method, $args=array(), $attachments=array()) {
 		$args["action"]=$method;
 
 		$url=get_option("rs_remote_site_url");
@@ -87,10 +89,26 @@ class RemoteSyncPlugin extends Singleton {
 		$url.="/wp-content/plugins/wp-remote-sync/api.php";
 		$url.="?".http_build_query($args);
 
-		//echo $url."<br/>";
-
 		$curl=curl_init($url);
 		curl_setopt($curl,CURLOPT_RETURNTRANSFER,TRUE);
+
+		if ($attachments) {
+			curl_setopt($curl,CURLOPT_POST,1);
+
+			$upload_base_dir=wp_upload_dir()["basedir"];
+
+			$postfields=[];
+			foreach ($attachments as $attachment) {
+				$attachmentfilename="$upload_base_dir/$attachment";
+				$postfields[$attachment]=new CurlFile(
+					$attachmentfilename,
+					"text/plain"
+				);
+			}
+
+			curl_setopt($curl,CURLOPT_POSTFIELDS,$postfields);
+		}
+
 		$res=curl_exec($curl);
 		$returnCode=curl_getinfo($curl,CURLINFO_HTTP_CODE);
 

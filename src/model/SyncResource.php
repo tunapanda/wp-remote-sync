@@ -80,6 +80,13 @@ class SyncResource extends SmartRecord {
 	}
 
 	/**
+	 * Get resource attachments.
+	 */
+	public function getResourceAttachments() {
+		return $this->getSyncer()->getResourceAttachments($this->localId);
+	}
+
+	/**
 	 * Get syncer.
 	 */
 	public function getSyncer() {

@@ -113,3 +113,22 @@ function rs_trash_post($id) {
 }
 
 add_action('wp_trash_post','rs_trash_post');
+
+/**
+ * Add, edit and delete attachment.
+ */
+function rs_update_attachment($id) {
+	RemoteSyncPlugin::instance()->getSyncerByType("attachment")->notifyLocalChange($id);
+}
+
+add_action("add_attachment","rs_update_attachment");
+add_action("edit_attachment","rs_update_attachment");
+
+/*
+ * Delete attachment.
+ */
+function rs_delete_attachment($id) {
+	RemoteSyncPlugin::instance()->getSyncerByType("attachment")->notifyLocalDelete($id);
+}
+
+add_action("delete_attachment","rs_delete_attachment");

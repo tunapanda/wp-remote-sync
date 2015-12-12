@@ -74,6 +74,7 @@ class RemoteSyncApi {
 		$syncer=RemoteSyncPlugin::instance()->getSyncerByType($args["type"]);
 		$syncer->setActOnLocalChange(FALSE);
 		$localId=$syncer->createResource($data);
+		$syncer->processAttachments($localId);
 
 		$localResource=new SyncResource($syncer->getType());
 		$localResource->localId=$localId;
@@ -111,6 +112,7 @@ class RemoteSyncApi {
 		$syncer=$resource->getSyncer();
 		$syncer->setActOnLocalChange(FALSE);
 		$syncer->updateResource($resource->localId,$data);
+		$syncer->processAttachments($resource->localId);
 
 		$resource->revision=$args["revision"];
 		$resource->save();

@@ -27,8 +27,10 @@ class PostSyncer extends AResourceSyncer {
 		));
 		$posts=$q->get_posts();
 
-		foreach ($posts as $post)
-			$ids[]=$post->ID;
+		foreach ($posts as $post) {
+			if ($post->post_type=="page" || $post->post_type=="post")
+				$ids[]=$post->ID;
+		}
 
 		return $ids;
 	}

@@ -64,6 +64,18 @@ abstract class AResourceSyncer {
 	}
 
 	/**
+	 * Notify local delete.
+	 */
+	public final function notifyLocalDelete($localId) {
+		$syncResource=SyncResource::findOneBy("localId",$localId);
+		if (!$syncResource)
+			return;
+
+		if (!$syncResource->baseRevision)
+			$syncResource->delete();
+	}
+
+	/**
 	 * List current local resources of this resource type.
 	 */
 	abstract function listResourceIds();
@@ -98,6 +110,75 @@ abstract class AResourceSyncer {
 	 * Get label to show when syncing.
 	 */
 	abstract function getResourceLabel($data);
+
+	/**
+	 * Override this to support attached files.
+	 */
+	function getResourceAttachments($localId) {
+		return array();
+	}
+
+	/**
+	 * Use this attachment and make sure it exists in the upload folder. 
+	 * It can come from a post file attachment, if we are the remote in the 
+	 * middle of a push operation. It can be fetched from the remote, 
+	 * if we are in a pull operation.
+	 */
+	private function processAttachment($filename) {
+		$upload_base_dir=wp_upload_dir()["basedir"];
+		$targetfilename="$upload_base_dir/$filename";
+		$keyfilename=str_replace(".","_",$filename);
+
+		if (file_exists($targetfilename))
+			return;
+
+		/*echo $keyfilename;
+		print_r($_FILES);*/
+
+		if ($_FILES[$keyfilename]) {
+			move_uploaded_file($_FILES[$keyfilename]["tmp_name"],$targetfilename);
+			return;
+		}
+
+		$url=get_option("rs_remote_site_url");
+		if (!trim($url))
+			throw new Exception("Remote site url not set for fetching attachment.");
+
+		$outf=fopen($targetfilename,"wb");
+		if (!$outf)
+			throw new Exception("Unable to write attachment file: ".$targetfilename);
+
+		$url.="/wp-content/uploads/$filename";
+
+		$curl=curl_init();
+		curl_setopt($curl,CURLOPT_FILE,$outf);
+		curl_setopt($curl,CURLOPT_HEADER,0);
+		curl_setopt($curl,CURLOPT_URL,$url);
+		curl_exec($curl);
+		fclose($outf);
+
+		if (curl_getinfo($curl,CURLINFO_HTTP_CODE)!=200) {
+			@unlink($targetfilename);
+			throw new Exception($url.": HTTP Error: ".curl_getinfo($curl,CURLINFO_HTTP_CODE));
+		}
+
+		if (curl_error($curl)) {
+			@unlink($targetfilename);
+			throw new Exception(curl_error($curl));
+		}
+	}
+
+	/**
+	 * Process attachments. If they don't exist locally they can either
+	 * have been sent as attachments to the current request. If not, try
+	 * to download them from the remote.
+	 */
+	public final function processAttachments($localId) {
+		$attachments=$this->getResourceAttachments($localId);
+
+		foreach ($attachments as $attachment)
+			$this->processAttachment($attachment);
+	}
 
 	/**
 	 * Convert local id to global id.
