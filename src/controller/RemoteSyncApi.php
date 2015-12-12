@@ -18,6 +18,9 @@ class RemoteSyncApi {
 	 * List.
 	 */
 	public function ls($args) {
+		if (!isset($args["type"]))
+			throw new Exception("Expected resource type for ls");
+
 		$syncer=RemoteSyncPlugin::instance()->getSyncerByType($args["type"]);
 		$resources=$syncer->getSyncResources();
 		$res=array();
