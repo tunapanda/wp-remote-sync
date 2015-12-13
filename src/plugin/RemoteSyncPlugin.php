@@ -5,6 +5,7 @@ require_once __DIR__."/../syncers/PostSyncer.php";
 require_once __DIR__."/../syncers/AttachmentSyncer.php";
 require_once __DIR__."/../controller/RemoteSyncApi.php";
 require_once __DIR__."/../controller/RemoteSyncOperations.php";
+require_once __DIR__."/../utils/Curl.php";
 
 /**
  * Remote sync plugin.
@@ -89,11 +90,11 @@ class RemoteSyncPlugin extends Singleton {
 		$url.="/wp-content/plugins/wp-remote-sync/api.php";
 		$url.="?".http_build_query($args);
 
-		$curl=curl_init($url);
-		curl_setopt($curl,CURLOPT_RETURNTRANSFER,TRUE);
+		$curl=new Curl($url);
+		$curl->setopt(CURLOPT_RETURNTRANSFER,TRUE);
 
 		if ($attachments) {
-			curl_setopt($curl,CURLOPT_POST,1);
+			$curl->setopt(CURLOPT_POST,1);
 
 			$upload_base_dir=wp_upload_dir()["basedir"];
 
@@ -106,11 +107,12 @@ class RemoteSyncPlugin extends Singleton {
 				);
 			}
 
-			curl_setopt($curl,CURLOPT_POSTFIELDS,$postfields);
+			$curl->setopt(CURLOPT_POSTFIELDS,$postfields);
 		}
 
-		$res=curl_exec($curl);
-		$returnCode=curl_getinfo($curl,CURLINFO_HTTP_CODE);
+		$res=$curl->exec();
+		$returnCode=$curl->getinfo(CURLINFO_HTTP_CODE);
+		$curl->close();
 
 		if ($returnCode!=200)
 			throw new Exception("Unexpected return code: ".$returnCode."\n".$res);
