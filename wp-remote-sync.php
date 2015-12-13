@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__."/src/plugin/RemoteSyncPlugin.php";
+require_once __DIR__."/src/model/SyncResource.php";
 
 /*
 Plugin Name: Remote Sync
