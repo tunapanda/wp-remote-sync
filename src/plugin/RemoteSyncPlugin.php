@@ -19,6 +19,7 @@ class RemoteSyncPlugin extends Singleton {
 		$this->syncers=NULL;
 		$this->api=NULL;
 		$this->operations=NULL;
+		$this->Curl="Curl";
 	}
 
 	/**
@@ -90,7 +91,7 @@ class RemoteSyncPlugin extends Singleton {
 		$url.="/wp-content/plugins/wp-remote-sync/api.php";
 		$url.="?".http_build_query($args);
 
-		$curl=new Curl($url);
+		$curl=new $this->Curl($url);
 		$curl->setopt(CURLOPT_RETURNTRANSFER,TRUE);
 
 		if ($attachments) {
@@ -117,9 +118,11 @@ class RemoteSyncPlugin extends Singleton {
 		if ($returnCode!=200)
 			throw new Exception("Unexpected return code: ".$returnCode."\n".$res);
 
+		//echo "curl res: ".$res;
+
 		$parsedRes=json_decode($res,TRUE);
 
-		if ($parsedRes===FALSE)
+		if ($parsedRes===NULL)
 			throw new Exception("Unable to parse json... ".$res);
 
 		return $parsedRes;
@@ -134,6 +137,9 @@ class RemoteSyncPlugin extends Singleton {
 		));
 
 		$remoteResources=[];
+
+		/*echo "heeere...";
+		print_r($infos);*/
 
 		foreach ($infos as $info) {
 			$remoteResource=new RemoteResource($type, $info["globalId"], $info["revision"]);

@@ -99,7 +99,9 @@ class RemoteSyncOperations {
 			}
 
 			foreach ($remoteResources as $remoteResource) {
-				$syncResource=$syncResources[$remoteResource->globalId];
+				$syncResource=NULL;
+				if (isset($syncResources[$remoteResource->globalId]))
+					$syncResource=$syncResources[$remoteResource->globalId];
 
 				if (!$syncResource)
 					$newRemote++;
