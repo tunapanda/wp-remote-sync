@@ -253,11 +253,7 @@ abstract class AResourceSyncer {
 	 * Install.
 	 */
 	public function install() {
-		$currentIds=$this->listResourceIds();
-
-		foreach ($currentIds as $id) {
-			$this->notifyLocalChange($id);
-		}
+		$this->updateSyncResources();
 	}
 
 	/**
