@@ -47,16 +47,6 @@ function rs_create_settings_page() {
 }
 
 /**
- * Handle exceptions during an operation.
- */
-function rsOperationExceptionHandler($exception) {
-	rsJobLog("** Error **");
-	rsJobLog($exception->getMessage());
-	rsJobDone();
-	exit();
-}
-
-/**
  * Create operations page.
  */
 function rs_create_operations_page() {
@@ -89,7 +79,7 @@ register_uninstall_hook(__FILE__,'rs_uninstall');
 /**
  * Post saved.
  */
-function rs_save_post($id) {
+/*function rs_save_post($id) {
 	if (wp_is_post_revision($id))
 		return;
 
@@ -103,32 +93,32 @@ function rs_save_post($id) {
 	RemoteSyncPlugin::instance()->getSyncerByType("post")->notifyLocalChange($id);
 }
 
-add_action('save_post','rs_save_post');
+add_action('save_post','rs_save_post');*/
 
 /**
  * Post trashed.
  */
-function rs_trash_post($id) {
+/*function rs_trash_post($id) {
 	RemoteSyncPlugin::instance()->getSyncerByType("post")->notifyLocalChange($id);
 }
 
-add_action('wp_trash_post','rs_trash_post');
+add_action('wp_trash_post','rs_trash_post');*/
 
 /**
  * Add, edit and delete attachment.
  */
-function rs_update_attachment($id) {
+/*function rs_update_attachment($id) {
 	RemoteSyncPlugin::instance()->getSyncerByType("attachment")->notifyLocalChange($id);
 }
 
 add_action("add_attachment","rs_update_attachment");
-add_action("edit_attachment","rs_update_attachment");
+add_action("edit_attachment","rs_update_attachment");*/
 
 /*
  * Delete attachment.
  */
-function rs_delete_attachment($id) {
+/*function rs_delete_attachment($id) {
 	RemoteSyncPlugin::instance()->getSyncerByType("attachment")->notifyLocalDelete($id);
 }
 
-add_action("delete_attachment","rs_delete_attachment");
+add_action("delete_attachment","rs_delete_attachment");*/

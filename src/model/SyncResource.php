@@ -23,23 +23,38 @@ class SyncResource extends SmartRecord {
 		self::field("type","varchar(255) not null");
 		self::field("localId","integer not null");
 		self::field("globalId","varchar(255) not null");
-		self::field("revision","varchar(255) not null");
-		self::field("baseRevision","varchar(255)");
 		self::field("baseData","text");
+	}
+
+	/**
+	 * Get base revision.
+	 */
+	public function getBaseRevision() {
+		if (!$this->baseData)
+			return NULL;
+
+		return $this->getSyncer()->getResourceRevision($this->getBaseData());
+	}
+
+	/**
+	 * Get revision
+	 */
+	public function getRevision() {
+		return $this->getSyncer()->getResourceRevision($this->getData());
 	}
 
 	/**
 	 * Is this locally modified?
 	 */
 	public function isLocallyModified() {
-		return $this->revision!=$this->baseRevision;
+		return $this->getRevision()!=$this->getBaseRevision();
 	}
 
 	/**
 	 * Is this a new resource?
 	 */
 	public function isNew() {
-		if ($this->baseRevision)
+		if ($this->getBaseRevision())
 			return FALSE;
 
 		return TRUE;

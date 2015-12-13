@@ -22,6 +22,7 @@ class RemoteSyncApi {
 			throw new Exception("Expected resource type for ls");
 
 		$syncer=RemoteSyncPlugin::instance()->getSyncerByType($args["type"]);
+		$syncer->updateSyncResources();
 		$resources=$syncer->getSyncResources();
 		$res=array();
 
@@ -29,7 +30,7 @@ class RemoteSyncApi {
 			if (!$resource->isDeleted()) {
 				$res[]=array(
 					"globalId"=>$resource->globalId,
-					"revision"=>$resource->revision
+					"revision"=>$resource->getRevision()
 				);
 			}
 		}
@@ -46,12 +47,13 @@ class RemoteSyncApi {
 
 		$resource=SyncResource::findOneBy("globalId",$args["globalId"]);
 		$syncer=RemoteSyncPlugin::instance()->getSyncerByType($resource->type);
+		$syncer->updateSyncResources();
 
 		return array(
 			"globalId"=>$resource->globalId,
-			"revision"=>$resource->revision,
+			"revision"=>$resource->getRevision(),
 			"type"=>$resource->type,
-			"data"=>$syncer->getResource($resource->localId)
+			"data"=>$resource->getData()
 		);
 	}
 
@@ -59,9 +61,12 @@ class RemoteSyncApi {
 	 * Add a resource.
 	 */
 	public function add($args) {
-		if (!$args["globalId"] || !$args["revision"] ||
+		if (!$args["globalId"] ||
 			!$args["data"] || !$args["type"])
-			throw new Exception("Expected globalId, revision, type and data.");
+			throw new Exception("Expected globalId, type and data.");
+
+		$syncer=RemoteSyncPlugin::instance()->getSyncerByType($args["type"]);
+		$syncer->updateSyncResources();
 
 		$resource=SyncResource::findOneBy("globalId",$args["globalId"]);
 		if ($resource)
@@ -74,15 +79,12 @@ class RemoteSyncApi {
 		if (!$data)
 			throw new Exception("Unable to parse json data");
 
-		$syncer=RemoteSyncPlugin::instance()->getSyncerByType($args["type"]);
-		$syncer->setActOnLocalChange(FALSE);
 		$localId=$syncer->createResource($data);
 		$syncer->processAttachments($localId);
 
 		$localResource=new SyncResource($syncer->getType());
 		$localResource->localId=$localId;
 		$localResource->globalId=$args["globalId"];
-		$localResource->revision=$args["revision"];
 		$localResource->save();
 
 		return array(
@@ -94,15 +96,15 @@ class RemoteSyncApi {
 	 * Put.
 	 */
 	public function put($args) {
-		if (!$args["globalId"] || !$args["revision"] ||
+		if (!$args["globalId"] ||
 			!$args["baseRevision"] || !$args["data"])
-			throw new Exception("Expected globalId, revision, baseRevision and data.");
+			throw new Exception("Expected globalId, baseRevision and data.");
 
 		$resource=SyncResource::findOneBy("globalId",$args["globalId"]);
 		if (!$resource)
 			throw new Exception("Doesn't exist locally");
 
-		if ($args["baseRevision"]!=$resource->revision)
+		if ($args["baseRevision"]!=$resource->getRevision())
 			throw new Exception("Wrong base revision, please pull.");
 
 		$data=json_decode($args["data"],TRUE);
@@ -113,11 +115,10 @@ class RemoteSyncApi {
 			throw new Exception("Unable to parse json data");
 
 		$syncer=$resource->getSyncer();
-		$syncer->setActOnLocalChange(FALSE);
+		//$syncer->updateSyncResources();
 		$syncer->updateResource($resource->localId,$data);
 		$syncer->processAttachments($resource->localId);
 
-		$resource->revision=$args["revision"];
 		$resource->save();
 
 		return array(
@@ -134,11 +135,9 @@ class RemoteSyncApi {
 			throw new Exception("Doesn't exist locally");
 
 		$syncer=$resource->getSyncer();
-		$syncer->setActOnLocalChange(FALSE);
-
 		$syncer->deleteResource($resource->localId);
 
-		if (!$resource->baseRevision)
+		if (!$resource->getBaseRevision())
 			$resource->delete();
 
 		return array(

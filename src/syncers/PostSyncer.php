@@ -36,6 +36,27 @@ class PostSyncer extends AResourceSyncer {
 	}
 
 	/**
+	 * Get resource revision.
+	 */
+/*	public function getResourceRevision($localId) {
+		$post=get_post($localId);
+
+		if (!$post)
+			return NULL;
+
+		return $post->post_modified;
+	}*/
+
+	/**
+	 * Get resource revision.
+	 */
+/*	public function setResourceRevision($localId, $revision) {
+		$post=get_post($localId);
+		$post->post_modified=$revision;
+		wp_update_post($post);
+	}*/
+
+	/**
 	 * Get post by local id.
 	 */
 	public function getResource($localId) {

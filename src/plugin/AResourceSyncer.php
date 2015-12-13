@@ -8,8 +8,6 @@ require_once __DIR__."/../../ext/merge3/DiffModule.php";
  */
 abstract class AResourceSyncer {
 
-	static $actOnLocalChange=TRUE;
-
 	/**
 	 * Construct.
 	 */
@@ -25,54 +23,26 @@ abstract class AResourceSyncer {
 	}
 
 	/**
-	 * Act on local change?
+	 * Update local revisions.
 	 */
-	public function setActOnLocalChange($value) {
-		AResourceSyncer::$actOnLocalChange=$value;
-	}
+	public final function updateSyncResources() {
+		$localIds=$this->listResourceIds();
+		$syncResources=$this->getSyncResourcesByLocalId();
 
-	/**
-	 * Notify the system that a resource has been locally changed.
-	 */
-	public final function notifyLocalChange($localId) {
-		if (!AResourceSyncer::$actOnLocalChange)
-			return;
+		foreach ($localIds as $localId) {
+			if (!isset($syncResources[$localId])) {
+				$syncResource=new SyncResource($this->type);
+				$syncResource->globalId=uniqid();
+				$syncResource->localId=$localId;
+				$syncResource->save();
+			}
+		}
 
-		if (!$localId)
-			throw new Exception("localId is null!");
-
-		$syncResource=SyncResource::findOneBy("localId",$localId);
-
-		if (!$syncResource && !$this->getResource($localId))
-			return;
-
-		if ($syncResource && !$this->getResource($localId)) {
-			if (!$syncResource->baseRevision)
+		foreach ($syncResources as $syncResource) {
+			if (!$syncResource->getRevision() &&
+					!$syncResource->getBaseRevision())
 				$syncResource->delete();
-	
-			return;
 		}
-
-		if (!$syncResource) {
-			$syncResource=new SyncResource($this->type);
-			$syncResource->localId=$localId;
-			$syncResource->globalId=uniqid();
-		}
-
-		$syncResource->revision=uniqid();
-		$syncResource->save();
-	}
-
-	/**
-	 * Notify local delete.
-	 */
-	public final function notifyLocalDelete($localId) {
-		$syncResource=SyncResource::findOneBy("localId",$localId);
-		if (!$syncResource)
-			return;
-
-		if (!$syncResource->baseRevision)
-			$syncResource->delete();
 	}
 
 	/**
@@ -112,6 +82,16 @@ abstract class AResourceSyncer {
 	abstract function getResourceLabel($data);
 
 	/**
+	 * Get local resource revision.
+	 */
+	function getResourceRevision($data) {
+		if (!$data)
+			return NULL;
+
+		return md5(json_encode($data));
+	}
+
+	/**
 	 * Override this to support attached files.
 	 */
 	function getResourceAttachments($localId) {
@@ -131,9 +111,6 @@ abstract class AResourceSyncer {
 
 		if (file_exists($targetfilename))
 			return;
-
-		/*echo $keyfilename;
-		print_r($_FILES);*/
 
 		if ($_FILES[$keyfilename]) {
 			move_uploaded_file($_FILES[$keyfilename]["tmp_name"],$targetfilename);
@@ -235,6 +212,19 @@ abstract class AResourceSyncer {
 
 		foreach ($syncResources as $syncResource)
 			$res[$syncResource->globalId]=$syncResource;
+
+		return $res;
+	}
+
+	/**
+	 * Get related sync resources, keyed on localId.
+	 */
+	public function getSyncResourcesByLocalId() {
+		$syncResources=$this->getSyncResources();
+		$res=[];
+
+		foreach ($syncResources as $syncResource)
+			$res[$syncResource->localId]=$syncResource;
 
 		return $res;
 	}

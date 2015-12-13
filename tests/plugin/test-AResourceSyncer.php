@@ -15,6 +15,7 @@ class TestSyncer extends AResourceSyncer {
 	function deleteResource($localId) {}
 	function mergeResourceData($base, $local, $remote) {}
 	function getResourceLabel($data) {}
+	function getResourceRevision($localId) {}
 }
 
 class AResourceSyncerTest extends WP_UnitTestCase {

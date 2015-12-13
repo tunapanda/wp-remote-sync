@@ -51,4 +51,11 @@ class RemoteResource {
 		$data=$this->getData();
 		return $this->getSyncer()->getResourceLabel($data);
 	}
+
+	/**
+	 * Get revision
+	 */
+	public function getRevision() {
+		return $this->revision;
+	}
 }
