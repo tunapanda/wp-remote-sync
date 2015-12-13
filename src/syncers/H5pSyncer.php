@@ -124,6 +124,7 @@ class H5pSyncer extends AResourceSyncer {
 			throw new Exception("Strange, h5p library not found.");
 
 		$dependencies=$this->findH5pContentDependencies($localId);
+		sort($dependencies);
 
 		return array(
 			"title"=>$h5p["title"],
@@ -133,9 +134,9 @@ class H5pSyncer extends AResourceSyncer {
 			"embed_type"=>$h5p["embed_type"],
 			"disable"=>$h5p["disable"],
 			"content_type"=>$h5s["content_type"],
-			"license"=>$h5p["license"],
-			"keywords"=>$h5p["keywords"],
-			"description"=>$h5p["description"],
+			"keywords"=>$h5p["keywords"]?$h5p["keywords"]:"",
+			"description"=>$h5p["description"]?$h5p["description"]:"",
+			"description"=>$h5p["license"]?$h5p["license"]:"",
 			"library"=>array(
 				"name"=>$h5pLibrary["name"],
 				"major_version"=>$h5pLibrary["major_version"],

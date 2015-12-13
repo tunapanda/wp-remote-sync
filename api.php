@@ -7,5 +7,6 @@ use remotesync\WpUtil;
 
 require_once WpUtil::getWpLoadPath();
 
+header('Content-Type: application/json');
 $plugin=new RemoteSyncPlugin();
 $plugin->getApi()->handleApiCall($_REQUEST["action"],$_REQUEST);
