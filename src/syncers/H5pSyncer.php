@@ -136,7 +136,7 @@ class H5pSyncer extends AResourceSyncer {
 			"content_type"=>$h5s["content_type"],
 			"keywords"=>$h5p["keywords"]?$h5p["keywords"]:"",
 			"description"=>$h5p["description"]?$h5p["description"]:"",
-			"description"=>$h5p["license"]?$h5p["license"]:"",
+			"license"=>$h5p["license"]?$h5p["license"]:"",
 			"library"=>array(
 				"name"=>$h5pLibrary["name"],
 				"major_version"=>$h5pLibrary["major_version"],
@@ -145,25 +145,6 @@ class H5pSyncer extends AResourceSyncer {
 			),
 			"libraries"=>$dependencies
 		);
-	}
-
-	/**
-	 * Update a local resource with data.
-	 */
-	function updateResource($localId, $data) {
-		throw new Exception("updateResource not implemented");
-		$post=get_post($localId);
-
-		$post->post_name=$data["post_name"];
-		$post->post_title=$data["post_title"];
-		$post->post_type=$data["post_type"];
-		$post->post_content=$data["post_content"];
-		$post->post_excerpt=$data["post_excerpt"];
-		$post->post_status=$data["post_status"];
-		$post->post_parent=$this->globalToLocal($data["post_parent"]);
-		$post->menu_order=$data["menu_order"];
-
-		wp_update_post($post);
 	}
 
 	/**
@@ -215,6 +196,47 @@ class H5pSyncer extends AResourceSyncer {
 	}
 
 	/**
+	 * Update a local resource with data.
+	 */
+	function updateResource($localId, $data) {
+		throw new Exception("updateResource not tested");
+
+		global $wpdb;
+
+		$library=$data["library"];
+		$h5pLibrary=$this->findH5pLibraryByName(
+			$library["name"],
+			$library["major_version"],
+			$library["minor_version"],
+			$library["patch_version"]
+		);
+
+		if (!$h5pLibrary)
+			throw new Exception(
+				"H5P Library $library[name] ($library[major_version].".
+				"$library[minor_version].$library[patch_version]) ".
+				"not found on this server.");
+
+		$q=$wpdb->prepare(
+			"UPDATE  wp_h5p_contents ".
+			"SET     title=%s, parameters=%s, filtered=%s, slug=%s, ".
+			"        embed_type=%s, disable=%s, content_type=%s, license=%s, ".
+			"        keywords=%s, description=%s, library_id=%s ".
+			"WHERE   id=%s ",
+			$data["title"], $data["parameters"], $data["filtered"], $data["slug"],
+			$data["embed_type"], $data["disable"], $data["content_type"], $data["license"],
+			$data["keywords"], $data["description"], $h5pLibrary["id"],
+			$localId);
+
+		$wpdb->query($q);
+		if ($wpdb->last_error)
+			throw new Exception($wpdb->last_error);
+
+		foreach ($data["libraries"] as $libraryData)
+			$this->ensureDependency($localId,$libraryData);
+	}
+
+	/**
 	 * Create a local resource.
 	 */
 	function createResource($data) {
@@ -260,28 +282,67 @@ class H5pSyncer extends AResourceSyncer {
 	 * Delete a local resource.
 	 */
 	function deleteResource($localId) {
-		throw new Exception("deleteResource not implemented");
-		wp_trash_post($localId);
+		throw new Exception("deleteResource not tested yet");
+
+		$q=$wpdb->prepare(
+			"DELETE FROM  wp_h5p_contents ".
+			"WHERE        id=%s",
+			$localId
+		);
+
+		$wpdb->query($q);
+		if ($wpdb->last_error)
+			throw new Exception($wpdb->last_error);
+
+		$q=$wpdb->prepare(
+			"DELETE FROM  wp_h5p_contents_libraries ".
+			"WHERE        content_id=%s",
+			$localId
+		);
+
+		$wpdb->query($q);
+		if ($wpdb->last_error)
+			throw new Exception($wpdb->last_error);
 	}
+
+/*
+			"title"=>$h5p["title"],
+			"parameters"=>$h5p["parameters"],
+			"filtered"=>$h5p["filtered"],
+			"slug"=>$h5p["slug"],
+			"embed_type"=>$h5p["embed_type"],
+			"disable"=>$h5p["disable"],
+			"content_type"=>$h5s["content_type"],
+			"keywords"=>$h5p["keywords"]?$h5p["keywords"]:"",
+			"description"=>$h5p["description"]?$h5p["description"]:"",
+			"description"=>$h5p["license"]?$h5p["license"]:"",
+			"library"=>array(
+				"name"=>$h5pLibrary["name"],
+				"major_version"=>$h5pLibrary["major_version"],
+				"minor_version"=>$h5pLibrary["minor_version"],
+				"patch_version"=>$h5pLibrary["patch_version"],
+			),
+			"libraries"=>$dependencies
+*/
 
 	/**
 	 * Merge resource data.
 	 */
 	function mergeResourceData($base, $local, $remote) {
 		throw new Exception("mergeResourceData not implemented");
-		/*print_r($base);
-		print_r($local);
-		print_r($remote);*/
-
 		return array(
-			"post_name"=>$this->mergeKeyValue("post_name",$base,$local,$remote),
-			"post_title"=>$this->mergeKeyValue("post_title",$base,$local,$remote),
-			"post_type"=>$this->pickKeyValue("post_type",$base,$local,$remote),
-			"post_content"=>$this->mergeKeyValue("post_content",$base,$local,$remote),
-			"post_excerpt"=>$this->mergeKeyValue("post_excerpt",$base,$local,$remote),
-			"post_status"=>$this->pickKeyValue("post_status",$base,$local,$remote),
-			"post_parent"=>$this->pickKeyValue("post_parent",$base,$local,$remote),
-			"menu_order"=>$this->pickKeyValue("menu_order",$base,$local,$remote)
+			"title"=>$this->pickKeyValue("title",$base,$local,$remote),
+			"parameters"=>$this->pickKeyValue("parameters",$base,$local,$remote),
+			"filtered"=>$this->pickKeyValue("filtered",$base,$local,$remote),
+			"slug"=>$this->pickKeyValue("slug",$base,$local,$remote),
+			"embed_type"=>$this->pickKeyValue("embed_type",$base,$local,$remote),
+			"disable"=>$this->pickKeyValue("disable",$base,$local,$remote),
+			"content_type"=>$this->pickKeyValue("content_type",$base,$local,$remote),
+			"keywords"=>$this->pickKeyValue("keywords",$base,$local,$remote),
+			"description"=>$this->pickKeyValue("description",$base,$local,$remote),
+			"license"=>$this->pickKeyValue("license",$base,$local,$remote),
+			"library"=>$this->pickKeyValue("library",$base,$local,$remote),
+			"libraries"=>$this->pickKeyValue("libraries",$base,$local,$remote)
 		);
 	}
 
