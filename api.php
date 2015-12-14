@@ -7,6 +7,8 @@ use remotesync\WpUtil;
 
 require_once WpUtil::getWpLoadPath();
 
+require_once ABSPATH.'wp-admin/includes/plugin.php';
+
 header('Content-Type: application/json');
 $plugin=new RemoteSyncPlugin();
 $plugin->getApi()->handleApiCall($_REQUEST["action"],$_REQUEST);

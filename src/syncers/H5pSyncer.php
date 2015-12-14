@@ -15,6 +15,13 @@ class H5pSyncer extends AResourceSyncer {
 	}
 
 	/**
+	 * Is the underlying resource available?
+	 */
+	public function isAvailable() {
+		return is_plugin_active("h5p/h5p.php");
+	}
+
+	/**
 	 * List current local resources.
 	 */
 	public function listResourceIds() {
@@ -124,6 +131,7 @@ class H5pSyncer extends AResourceSyncer {
 			throw new Exception("Strange, h5p library not found.");
 
 		$dependencies=$this->findH5pContentDependencies($localId);
+//		$dependencies=array();
 		sort($dependencies);
 
 		return array(
@@ -169,7 +177,9 @@ class H5pSyncer extends AResourceSyncer {
 			"SELECT * ".
 			"FROM   wp_h5p_contents_libraries ".
 			"WHERE  content_id=%s ".
-			"AND    library_id=%s");
+			"AND    library_id=%s ".
+			"AND    dependency_type=%s",
+			$h5pId,$libraryId,$dependency["dependency_type"]);
 		$row=$wpdb->get_row($q);
 
 		if ($wpdb->last_error)
@@ -199,8 +209,6 @@ class H5pSyncer extends AResourceSyncer {
 	 * Update a local resource with data.
 	 */
 	function updateResource($localId, $data) {
-		throw new Exception("updateResource not tested");
-
 		global $wpdb;
 
 		$library=$data["library"];
@@ -282,7 +290,7 @@ class H5pSyncer extends AResourceSyncer {
 	 * Delete a local resource.
 	 */
 	function deleteResource($localId) {
-		throw new Exception("deleteResource not tested yet");
+		global $wpdb;
 
 		$q=$wpdb->prepare(
 			"DELETE FROM  wp_h5p_contents ".
@@ -304,26 +312,6 @@ class H5pSyncer extends AResourceSyncer {
 		if ($wpdb->last_error)
 			throw new Exception($wpdb->last_error);
 	}
-
-/*
-			"title"=>$h5p["title"],
-			"parameters"=>$h5p["parameters"],
-			"filtered"=>$h5p["filtered"],
-			"slug"=>$h5p["slug"],
-			"embed_type"=>$h5p["embed_type"],
-			"disable"=>$h5p["disable"],
-			"content_type"=>$h5s["content_type"],
-			"keywords"=>$h5p["keywords"]?$h5p["keywords"]:"",
-			"description"=>$h5p["description"]?$h5p["description"]:"",
-			"description"=>$h5p["license"]?$h5p["license"]:"",
-			"library"=>array(
-				"name"=>$h5pLibrary["name"],
-				"major_version"=>$h5pLibrary["major_version"],
-				"minor_version"=>$h5pLibrary["minor_version"],
-				"patch_version"=>$h5pLibrary["patch_version"],
-			),
-			"libraries"=>$dependencies
-*/
 
 	/**
 	 * Merge resource data.

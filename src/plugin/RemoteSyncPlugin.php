@@ -29,9 +29,18 @@ class RemoteSyncPlugin extends Singleton {
 	public function getEnabledSyncers() {
 		if (!$this->syncers) {
 			$this->syncers=array();
-			$this->syncers[]=new PostSyncer();
-			$this->syncers[]=new AttachmentSyncer();
-			//$this->syncers[]=new H5pSyncer();
+
+			$syncerClasses=array(
+				"PostSyncer",
+				"AttachmentSyncer",
+				"H5pSyncer"
+			);
+
+			foreach ($syncerClasses as $syncerClass) {
+				$syncer=new $syncerClass();
+				if ($syncer->isAvailable())
+					$this->syncers[]=$syncer;
+			}
 		}
 
 		return $this->syncers;

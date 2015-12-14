@@ -16,6 +16,13 @@ abstract class AResourceSyncer {
 	}
 
 	/**
+	 * Is the underlying resource available?
+	 */
+	public function isAvailable() {
+		return TRUE;
+	}
+
+	/**
 	 * Get type.
 	 */
 	public function getType() {
