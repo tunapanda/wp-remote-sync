@@ -100,17 +100,18 @@ class RemoteSyncPlugin extends Singleton {
 			throw new Exception("Remote site url not set");
 
 		$url.="/wp-content/plugins/wp-remote-sync/api.php";
-		$url.="?".http_build_query($args);
+//		$url.="?".http_build_query($args);
 
 		$curl=new $this->Curl($url);
 		$curl->setopt(CURLOPT_RETURNTRANSFER,TRUE);
+		$curl->setopt(CURLOPT_POST,1);
+		$postfields=$args;
 
 		if ($attachments) {
-			$curl->setopt(CURLOPT_POST,1);
+			//$curl->setopt(CURLOPT_POST,1);
 
 			$upload_base_dir=wp_upload_dir()["basedir"];
 
-			$postfields=[];
 			foreach ($attachments as $attachment) {
 				$attachmentfilename="$upload_base_dir/$attachment";
 				$postfields[$attachment]=new CurlFile(
@@ -118,9 +119,9 @@ class RemoteSyncPlugin extends Singleton {
 					"text/plain"
 				);
 			}
-
-			$curl->setopt(CURLOPT_POSTFIELDS,$postfields);
 		}
+
+		$curl->setopt(CURLOPT_POSTFIELDS,$postfields);
 
 		$res=$curl->exec();
 		$returnCode=$curl->getinfo(CURLINFO_HTTP_CODE);

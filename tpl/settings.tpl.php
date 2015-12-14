@@ -37,6 +37,20 @@
                     <p class="description">In the rare event of merge conflicts, how should the merge be done?</p>
                 </td>
             </tr>
+            <!--<tr valign="top">
+                <th scope="row">Resource types</th>
+                <td>
+                    <div style="margin-bottom: 0.5em"><label>
+                        <input type="checkbox"> Sync posts and pages
+                    </label></div>
+                    <div style="margin-bottom: 0.5em"><label>
+                        <input type="checkbox"> Sync media library
+                    </label></div>
+                    <div style="margin-bottom: 0.5em"><label>
+                        <input type="checkbox"> Sync H5P content
+                    </label></div>
+                </td>
+            </tr>-->
         </table>
 
         <?php submit_button(); ?>

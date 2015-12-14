@@ -131,7 +131,6 @@ class H5pSyncer extends AResourceSyncer {
 			throw new Exception("Strange, h5p library not found.");
 
 		$dependencies=$this->findH5pContentDependencies($localId);
-//		$dependencies=array();
 		sort($dependencies);
 
 		return array(
@@ -141,7 +140,7 @@ class H5pSyncer extends AResourceSyncer {
 			"slug"=>$h5p["slug"],
 			"embed_type"=>$h5p["embed_type"],
 			"disable"=>$h5p["disable"],
-			"content_type"=>$h5s["content_type"],
+			"content_type"=>$h5p["content_type"]?$h5p["content_type"]:"",
 			"keywords"=>$h5p["keywords"]?$h5p["keywords"]:"",
 			"description"=>$h5p["description"]?$h5p["description"]:"",
 			"license"=>$h5p["license"]?$h5p["license"]:"",
@@ -196,6 +195,23 @@ class H5pSyncer extends AResourceSyncer {
 				$h5pId,$libraryId,
 				$dependency["dependency_type"],$dependency["weight"],
 				$dependency["drop_css"]
+			);
+
+			$wpdb->query($q);
+
+			if ($wpdb->last_error)
+				throw new Exception($wpdb->last_error);
+		}
+
+		else {
+			$q=$wpdb->prepare(
+				"UPDATE  wp_h5p_contents_libraries ".
+				"SET     weight=%s, drop_css=%s ".
+				"WHERE   content_id=%s ".
+				"AND     library_id=%s ".
+				"AND     dependency_type=%s ",
+				$dependency["weight"],$dependency["drop_css"],
+				$h5pId,$libraryId,$dependency["dependency_type"]
 			);
 
 			$wpdb->query($q);
@@ -317,8 +333,7 @@ class H5pSyncer extends AResourceSyncer {
 	 * Merge resource data.
 	 */
 	function mergeResourceData($base, $local, $remote) {
-		throw new Exception("mergeResourceData not implemented");
-		return array(
+		$data=array(
 			"title"=>$this->pickKeyValue("title",$base,$local,$remote),
 			"parameters"=>$this->pickKeyValue("parameters",$base,$local,$remote),
 			"filtered"=>$this->pickKeyValue("filtered",$base,$local,$remote),
@@ -332,6 +347,14 @@ class H5pSyncer extends AResourceSyncer {
 			"library"=>$this->pickKeyValue("library",$base,$local,$remote),
 			"libraries"=>$this->pickKeyValue("libraries",$base,$local,$remote)
 		);
+
+/*		$data["parameters"]=json_encode($this->mergeObjects(
+			json_decode($base["parameters"]),
+			json_decode($local["parameters"]),
+			json_decode($remote["parameters"])
+		));*/
+
+		return $data;
 	}
 
 	/**
