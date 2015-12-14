@@ -106,6 +106,15 @@ abstract class AResourceSyncer {
 	}
 
 	/**
+	 * Return a textual "weight" that decides the
+	 * order in which the resources will be listed.
+	 * Useful in order to support hierarchial relationships.
+	 */
+	function getResourceWeight($localId) {
+		return "";
+	}
+
+	/**
 	 * Use this attachment and make sure it exists in the upload folder. 
 	 * It can come from a post file attachment, if we are the remote in the 
 	 * middle of a push operation. It can be fetched from the remote, 

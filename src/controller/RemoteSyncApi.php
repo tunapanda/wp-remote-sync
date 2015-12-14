@@ -15,6 +15,13 @@ class RemoteSyncApi {
 	}
 
 	/**
+	 * Compare resource weight.
+	 */
+	private function cmpResourceWeight($a, $b) {
+		return strcmp($a->weight,$b->weight);
+	}
+
+	/**
 	 * List.
 	 */
 	public function ls($args) {
@@ -25,6 +32,11 @@ class RemoteSyncApi {
 		$syncer->updateSyncResources();
 		$resources=$syncer->getSyncResources();
 		$res=array();
+
+		for ($i=0; $i<sizeof($resources); $i++)
+			$resources[$i]->weight=$syncer->getResourceWeight($resources[$i]->localId);
+
+		usort($resources,array($this,"cmpResourceWeight"));
 
 		foreach ($resources as $resource) {
 			if (!$resource->isDeleted()) {

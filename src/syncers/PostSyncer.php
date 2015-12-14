@@ -15,6 +15,25 @@ class PostSyncer extends AResourceSyncer {
 	}
 
 	/**
+	 * Get post path.
+	 */
+	private function getPostPath($postId) {
+		$post=get_post($postId);
+
+		if (!$post->post_parent)
+			return $postId;
+
+		return $this->getPostPath($post->post_parent)."/".$postId;
+	}
+
+	/**
+	 * Get weight.
+	 */
+	public function getResourceWeight($localId) {
+		return $this->getPostPath($localId);
+	}
+
+	/**
 	 * List current local resources.
 	 */
 	public function listResourceIds() {
