@@ -10,7 +10,7 @@ Sync content with a remote wordpress site in a similar way to a distributed vers
 
 ## Work in progress
 
-This is not in a working state yet!
+Works, but could use more testing...
 
 ## Hacking
 
