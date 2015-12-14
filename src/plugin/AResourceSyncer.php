@@ -2,7 +2,7 @@
 
 require_once __DIR__."/../model/SyncResource.php";
 require_once __DIR__."/../../ext/merge3/DiffModule.php";
-
+require_once __DIR__."/../../ext/spyc/Spyc.php";
 /**
  * Abstract class for handling remotely syncable resources.
  */
@@ -338,5 +338,19 @@ abstract class AResourceSyncer {
 		$res=substr($res,0,strlen($res)-1);
 
 		return $res;
+	}
+
+	/**
+	 * Merge objects.
+	 * COnvert them to yaml, then merge text and parse.
+	 */
+	public final function mergeObjects($base, $local, $remote) {
+		$baseYaml=spyc_dump($base);
+		$localYaml=spyc_dump($base);
+		$remoteYaml=spyc_dump($base);
+
+		$mergedYaml=$this->merge($baseYaml,$localYaml,$remoteYaml);
+
+		return spyc_load($mergedYaml);
 	}
 }

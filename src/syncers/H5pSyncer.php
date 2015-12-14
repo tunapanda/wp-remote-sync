@@ -352,6 +352,12 @@ class H5pSyncer extends AResourceSyncer {
 			json_decode($base["parameters"]),
 			json_decode($local["parameters"]),
 			json_decode($remote["parameters"])
+		));
+
+		$data["filtered"]=json_encode($this->mergeObjects(
+			json_decode($base["filtered"]),
+			json_decode($local["filtered"]),
+			json_decode($remote["filtered"])
 		));*/
 
 		return $data;
