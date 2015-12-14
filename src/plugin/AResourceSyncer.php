@@ -128,8 +128,17 @@ abstract class AResourceSyncer {
 		if (file_exists($targetfilename))
 			return;
 
+		$dir=dirname($targetfilename);
+		if (!file_exists($dir)) {
+			if (!mkdir($dir,0777,TRUE))
+				throw new Exception("Unable to create directory: ".$dir);
+		}
+
 		if ($_FILES[$keyfilename]) {
-			move_uploaded_file($_FILES[$keyfilename]["tmp_name"],$targetfilename);
+			$res=move_uploaded_file($_FILES[$keyfilename]["tmp_name"],$targetfilename);
+			if (!$res)
+				throw new Exception("Unable to move uploaded file.");
+
 			return;
 		}
 
