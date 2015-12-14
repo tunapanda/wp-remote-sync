@@ -296,8 +296,15 @@ class H5pSyncer extends AResourceSyncer {
 
 		$localId=$wpdb->insert_id;
 
-		foreach ($data["libraries"] as $libraryData)
-			$this->ensureDependency($localId,$libraryData);
+		try {
+			foreach ($data["libraries"] as $libraryData)
+				$this->ensureDependency($localId,$libraryData);
+		}
+
+		catch (Exception $e) {
+			$this->deleteResource($localId);
+			throw $e;
+		}
 
 		return $localId;
 	}

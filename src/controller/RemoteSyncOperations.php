@@ -192,7 +192,15 @@ class RemoteSyncOperations {
 				// Doesn't exist locally.
 				else {
 					$localId=$syncer->createResource($remoteResource->getData());
-					$syncer->processAttachments($localId);
+					try {
+						$syncer->processAttachments($localId);
+					}
+
+					catch (Exception $e) {
+						$syncer->deleteResource($localId);
+						throw $e;
+					}
+
 					$localResource=new SyncResource($syncer->getType());
 					$localResource->localId=$localId;
 					$localResource->globalId=$remoteResource->globalId;
