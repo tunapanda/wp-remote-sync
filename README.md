@@ -14,6 +14,9 @@ Works, but could use more testing...
 
 ## Hacking
 
-TDD rocks!
-
-Install wordpress testsuite with `. ./bin/install-wp-tests-local.sh`
+* TDD rocks!
+  Install wordpress testsuite with `. ./bin/install-wp-tests-local.sh`
+* It uses [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). If you clone the repository, you need to do so using any of these methods:
+    1. You can clone it using `git clone --recusrive`.
+    2. You can clone it without `--recursive`, and after do `git submodule init` and `git submodule update` inside the
+       cloned folder.
