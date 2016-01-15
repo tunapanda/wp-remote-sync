@@ -188,7 +188,7 @@ class RemoteSyncApi {
 	*/
 	public function doApiCall($call, $params){
 		$res = array();
-		if (!(array_key_exists("key", $params) && $params["key"] === get_option("rs_access_key"))){
+		if (!(array_key_exists("key", $params) && $params["key"] === get_option("rs_access_key",""))){
 			$res += array("Error" => "Operation NOT permitted!!\nEither you have not set the access key or the access key does not match the remote access key."); 
 			return $res; 
 		}
