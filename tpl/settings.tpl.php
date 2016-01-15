@@ -19,6 +19,13 @@
                     <p class="description">This is the remote site to pull changes from and push changes to.</p>
                 </td>
             </tr>
+            <tr>
+                <th>Enter Access Key</th>
+                <td>
+                    <input type="text" name="rs_access_key" value="<?php echo esc_attr(get_option("rs_access_key"));?>"/>
+                    <p class="description">Please enter the key so that you authenticate syncing</p> 
+                </td>
+            </tr>
             <tr valign="top">
                 <th scope="row">Merge strategy</th>
                 <td>
@@ -37,6 +44,7 @@
                     <p class="description">In the rare event of merge conflicts, how should the merge be done?</p>
                 </td>
             </tr>
+            
             <!--<tr valign="top">
                 <th scope="row">Resource types</th>
                 <td>
@@ -77,4 +85,5 @@
             Pull remote changes, then push local changes.<br/><br/>
         </p>
     </form>
+
 </div>

@@ -38,6 +38,7 @@ function rs_admin_menu() {
 function rs_admin_init() {
 	register_setting("rs","rs_remote_site_url");
 	register_setting("rs","rs_merge_strategy");
+	register_setting("rs","rs_access_key");
 }
 
 /**
@@ -52,7 +53,6 @@ function rs_create_settings_page() {
  */
 function rs_create_operations_page() {
 	require __DIR__."/tpl/operations.tpl.php";
-
 	RemoteSyncPlugin::instance()->getOperations()->handleOperation($_REQUEST["action"]);
 }
 

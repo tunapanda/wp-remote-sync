@@ -26,7 +26,7 @@ class RemoteSyncApi {
 	 */
 	public function ls($args) {
 		if (!isset($args["type"]))
-			throw new Exception("Expected resource type for ls");
+			throw new Exception("Expected resource type fopen(filename, mode)r ls");
 
 		$syncer=RemoteSyncPlugin::instance()->getSyncerByType($args["type"]);
 		$syncer->updateSyncResources();
@@ -176,13 +176,25 @@ class RemoteSyncApi {
 	 */
 	public function handleApiCall($call, $params) {
 		set_exception_handler(array($this,"handleException"));
-
 		if (!in_array($call,$this->calls))
 			throw new Exception("Unknown api call: $call");
-
-		$res=call_user_func(array($this,$call),$params);
-
+		$res = $this->doApiCall($call, $params);
 		echo json_encode($res);
 		exit();
+	}
+
+	/*
+		Handle the Api Response
+	*/
+	public function doApiCall($call, $params){
+		$res = array();
+		if (!(array_key_exists("key", $params) && $params["key"] === get_option("rs_access_key"))){
+			$res += array("Error" => "Operation NOT permitted!!\nEither you have not set the access key or the access key does not match the remote access key."); 
+			return $res; 
+		}
+		else {
+			$res=call_user_func(array($this,$call),$params);
+			return $res;
+		}
 	}
 }

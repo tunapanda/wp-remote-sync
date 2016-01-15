@@ -28,7 +28,7 @@ class RemoteSyncPlugin extends Singleton {
 	 */
 	public function getEnabledSyncers() {
 		if (!$this->syncers) {
-			$this->syncers=array();
+			$this->syncers=array(); 
 
 			$syncerClasses=array(
 				"PostSyncer",
@@ -94,7 +94,7 @@ class RemoteSyncPlugin extends Singleton {
 	 */
 	public function remoteCall($method, $args=array(), $attachments=array()) {
 		$args["action"]=$method;
-
+		$args["key"]=get_option("rs_access_key");
 		$url=get_option("rs_remote_site_url");
 		if (!trim($url))
 			throw new Exception("Remote site url not set");
@@ -106,6 +106,7 @@ class RemoteSyncPlugin extends Singleton {
 		$curl->setopt(CURLOPT_RETURNTRANSFER,TRUE);
 		$curl->setopt(CURLOPT_POST,1);
 		$postfields=$args;
+
 
 		if ($attachments) {
 			//$curl->setopt(CURLOPT_POST,1);
@@ -124,6 +125,7 @@ class RemoteSyncPlugin extends Singleton {
 		$curl->setopt(CURLOPT_POSTFIELDS,$postfields);
 
 		$res=$curl->exec();
+
 		$returnCode=$curl->getinfo(CURLINFO_HTTP_CODE);
 		$curl->close();
 
@@ -136,6 +138,9 @@ class RemoteSyncPlugin extends Singleton {
 
 		if ($parsedRes===NULL)
 			throw new Exception("Unable to parse json... ".$res);
+
+		if (array_key_exists("Error", $parsedRes))
+			throw new Exception($parsedRes["Error"]);
 
 		return $parsedRes;
 	}
@@ -160,4 +165,5 @@ class RemoteSyncPlugin extends Singleton {
 
 		return $remoteResources;
 	}
+	
 }
