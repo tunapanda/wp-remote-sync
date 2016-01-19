@@ -23,7 +23,7 @@ class SyncResource extends SmartRecord {
 		self::field("type","varchar(255) not null");
 		self::field("localId","integer not null");
 		self::field("globalId","varchar(255) not null");
-		self::field("baseData","text");
+		self::field("baseData","longtext");
 	}
 
 	/**
@@ -74,7 +74,12 @@ class SyncResource extends SmartRecord {
 	 * Get base data.
 	 */
 	public function getBaseData() {
-		return json_decode($this->baseData,TRUE);
+		$decodedBaseData=json_decode($this->baseData,TRUE);
+
+		if ($this->baseData && $decodedBaseData===NULL)
+			throw new Exception("Unable to decode base data");
+
+		return $decodedBaseData;
 	}
 
 	/**

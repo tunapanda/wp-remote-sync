@@ -160,12 +160,19 @@ class RemoteSyncOperations {
 				else if ($localResource) {
 					$localId=$localResource->localId;
 
+					if (!$localResource->getBaseRevision()) {
+						$this->job->log("local base revision missing, localId=".$localResource->id);
+						$this->job->log($localResource->getBaseData());
+						throw new Exception("local base revision missing (!?!?!?!)");
+					}
+
 					// Remotely changed
 					if ($localResource->getBaseRevision()!=$remoteResource->getRevision()) {
 						$label=$remoteResource->getLabel();
 
 						// Merge?
 						if ($localResource->isLocallyModified()) {
+							$this->job->log("modified... rev: ".$localResource->getRevision()." base: ".$localResource->getBaseRevision());
 							$merged=$syncer->mergeResourceData(
 								$localResource->getBaseData(),
 								$localResource->getData(),
@@ -173,10 +180,36 @@ class RemoteSyncOperations {
 							);
 
 							$syncer->updateResource($localId,$merged);
+							$mergedRevision=$syncer->getResourceRevision($merged);
+
+							$savedData=$syncer->getResource($localId);
+							$savedRevision=$syncer->getResourceRevision($savedData);
+
+							if ($savedRevision!=$mergedRevision) {
+								$this->job->log("comparing");
+								$this->job->log("eq: ".($merged==$savedData));
+								$this->job->log("eq: ".($merged===$savedData));
+								$this->job->log("json eq: ".(json_encode($merged,JSON_PRETTY_PRINT)==json_encode($savedData,JSON_PRETTY_PRINT)));
+
+								$this->job->log("Problem with syncer, the saved and merged versions differ!");
+								$this->job->log("**** merged data ****");
+								$this->job->log(json_encode($merged,JSON_PRETTY_PRINT));
+								$this->job->log("**** saved data ****");
+								$this->job->log(json_encode($savedData,JSON_PRETTY_PRINT));
+								$this->job->log("saved: ".$savedRevision." merged: ".$mergedRevision);
+								throw new Exception("The saved version is not the one we saved");
+							}
+
 							$syncer->processAttachments($localId);
 							$localResource->setBaseData($remoteResource->getData());
 							$localResource->save();
 							$this->job->log("* M {$remoteResource->globalId} $localId $label");
+
+							$localRev=$localResource->getRevision();
+							$remoteRev=$remoteResource->getRevision();
+							$baseRev=$localResource->getBaseRevision();
+
+							$this->job->log("l=".$localRev." r=".$remoteRev." b=".$baseRev);
 						}
 
 						else {
@@ -210,6 +243,20 @@ class RemoteSyncOperations {
 					$label=$remoteResource->getLabel();
 
 					$this->job->log("* A {$remoteResource->globalId} $localId $label");
+
+					$localRev=$localResource->getRevision();
+					$baseRev=$localResource->getBaseRevision();
+					$remoteRev=$remoteResource->getRevision();
+
+					if ($localRev!=$baseRev || $baseRev!=$remoteRev) {
+						$this->job->log(
+							"l=".$localResource->getRevision().
+							" b=".$localResource->getBaseRevision().
+							" r=".$remoteResource->getRevision()
+						);
+
+						throw new Exception("versions differ after add, this is unexpected");
+					}
 				}
 			}
 

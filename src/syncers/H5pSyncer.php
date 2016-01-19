@@ -355,6 +355,12 @@ class H5pSyncer extends AResourceSyncer {
 			"libraries"=>$this->pickKeyValue("libraries",$base,$local,$remote)
 		);
 
+		$data["content_type"]=$data["content_type"]?$data["content_type"]:"";
+		$data["keywords"]=$data["keywords"]?$data["keywords"]:"";
+		$data["description"]=$data["description"]?$data["description"]:"";
+		$data["license"]=$data["license"]?$data["license"]:"";
+
+		// experimental merging of the actual content data, doesn't work atm...
 /*		$data["parameters"]=json_encode($this->mergeObjects(
 			json_decode($base["parameters"]),
 			json_decode($local["parameters"]),
