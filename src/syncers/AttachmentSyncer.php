@@ -43,11 +43,14 @@ class AttachmentSyncer extends AResourceSyncer {
 		$res[]=get_post_meta($localId,"_wp_attached_file",TRUE);
 		$meta=get_post_meta($localId,"_wp_attachment_metadata",TRUE);
 
-		$res[]=$meta["file"];
-		if ($meta["sizes"])
+		if (isset($meta["file"]))
+			$res[]=$meta["file"];
+
+		if (isset($meta["file"]) && isset($meta["file"]) && $meta["sizes"]){
 			foreach ($meta["sizes"] as $type=>$size)
 				$res[]=dirname($meta["file"])."/".$size["file"];
-
+		}
+		
 		return $res;
 	}
 
