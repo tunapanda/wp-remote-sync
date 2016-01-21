@@ -123,9 +123,11 @@ abstract class AResourceSyncer {
 	 * middle of a push operation. It can be fetched from the remote, 
 	 * if we are in a pull operation.
 	 */
-	private function processAttachment($filename) {
+	private function processAttachment($localId, $globalId, $filename) {
+		//echo "processing...$globalId";
+
 		$upload_base_dir=wp_upload_dir()["basedir"];
-		$targetfilename="$upload_base_dir/$filename";
+		$targetfilename=str_replace("{id}",$localId,"$upload_base_dir/$filename");
 		$keyfilename=str_replace(".","_",$filename);
 
 		if (file_exists($targetfilename))
@@ -149,11 +151,23 @@ abstract class AResourceSyncer {
 		if (!trim($url))
 			throw new Exception("Remote site url not set for fetching attachment.");
 
+		$url.="/wp-content/plugins/wp-remote-sync/api.php";
+
+		$params=array(
+			"action"=>"getAttachment",
+			"key"=>get_option("rs_access_key",""),
+			"filename"=>$filename,
+			"globalId"=>$globalId
+		);
+
+		if (!$params["globalId"])
+			throw new Exception("The is no global id!");
+
+		$url.="?".http_build_query($params);
+
 		$outf=fopen($targetfilename,"wb");
 		if (!$outf)
 			throw new Exception("Unable to write attachment file: ".$targetfilename);
-
-		$url.="/wp-content/uploads/$filename";
 
 		$curl=curl_init();
 		curl_setopt($curl,CURLOPT_FILE,$outf);
@@ -178,11 +192,11 @@ abstract class AResourceSyncer {
 	 * have been sent as attachments to the current request. If not, try
 	 * to download them from the remote.
 	 */
-	public final function processAttachments($localId) {
+	public final function processAttachments($localId, $globalId) {
 		$attachments=$this->getResourceAttachments($localId);
 
 		foreach ($attachments as $attachment)
-			$this->processAttachment($attachment);
+			$this->processAttachment($localId,$globalId,$attachment);
 	}
 
 	/**

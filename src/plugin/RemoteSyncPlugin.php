@@ -92,7 +92,10 @@ class RemoteSyncPlugin extends Singleton {
 	/**
 	 * Make a call to the remote.
 	 */
-	public function remoteCall($method, $args=array(), $attachments=array()) {
+	public function remoteCall($method, $args=array(), $attachments=array(), $attachmentLocalId=NULL) {
+		if ($attachments && !$attachmentLocalId)
+			throw new Exception("got attachment but no local id");
+
 		$args["action"]=$method;
 		$args["key"]=get_option("rs_access_key");
 		$url=get_option("rs_remote_site_url");
@@ -100,21 +103,20 @@ class RemoteSyncPlugin extends Singleton {
 			throw new Exception("Remote site url not set");
 
 		$url.="/wp-content/plugins/wp-remote-sync/api.php";
-//		$url.="?".http_build_query($args);
 
 		$curl=new $this->Curl($url);
 		$curl->setopt(CURLOPT_RETURNTRANSFER,TRUE);
 		$curl->setopt(CURLOPT_POST,1);
 		$postfields=$args;
 
-
 		if ($attachments) {
-			//$curl->setopt(CURLOPT_POST,1);
-
 			$upload_base_dir=wp_upload_dir()["basedir"];
 
 			foreach ($attachments as $attachment) {
-				$attachmentfilename="$upload_base_dir/$attachment";
+				$attachmentfilename=
+					$upload_base_dir."/".
+					str_replace("{id}",$attachmentLocalId,$attachment);
+
 				$postfields[$attachment]=new CurlFile(
 					$attachmentfilename,
 					"text/plain"
@@ -125,6 +127,8 @@ class RemoteSyncPlugin extends Singleton {
 		$curl->setopt(CURLOPT_POSTFIELDS,$postfields);
 
 		$res=$curl->exec();
+		if ($curl->error())
+			throw new Exception("Curl error: ".$curl->error());
 
 		$returnCode=$curl->getinfo(CURLINFO_HTTP_CODE);
 		$curl->close();

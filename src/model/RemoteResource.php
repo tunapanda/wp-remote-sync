@@ -14,6 +14,9 @@ class RemoteResource {
 		$this->revision=$revision;
 		$this->data=NULL;
 		$this->fetched=FALSE;
+
+		if (!$globalId)
+			throw new Exception("no globalId in RemoteResource constr...");
 	}
 
 	/**

@@ -40,6 +40,10 @@ class MockCurl {
 		return $res;
 	}
 
+	function error() {
+		return "";
+	}
+
 	function close() {
 	}
 }

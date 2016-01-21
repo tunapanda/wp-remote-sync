@@ -37,6 +37,48 @@ class H5pSyncer extends AResourceSyncer {
 	}
 
 	/**
+	 * Extract attachments.
+	 */
+	private function extractAttachmentsFromParameters($parameters) {
+		$res=array();
+
+		foreach ($parameters as $key=>$value) {
+			if ($key=="file" && is_array($value) && isset($value["path"])) {
+				$path=$value["path"];
+				$res[]="h5p/content/{id}/$path";
+			}
+
+			else if (is_array($value))
+				$res=array_merge($res,$this->extractAttachmentsFromParameters($value));
+		}
+
+		return $res;
+	}
+
+	/**
+	 * Get resource attachments.
+	 */
+	public function getResourceAttachments($localId) {
+		global $wpdb;
+
+		$q=$wpdb->prepare("SELECT * FROM wp_h5p_contents WHERE id=%s",$localId);
+		$h5p=$wpdb->get_row($q,ARRAY_A);
+
+		if ($wpdb->last_error)
+			throw new Exception($wpdb->last_error);
+
+		if (!$h5p)
+			throw new Exception("H5P entry not found for attachments");
+
+		//echo $h5p["parameters"];
+
+		$json=json_decode($h5p["parameters"],TRUE);
+		$res=$this->extractAttachmentsFromParameters($json);
+
+		return $res;
+	}
+
+	/**
 	 * Find H5P library by id.
 	 */
 	public function findH5pLibraryById($id) {

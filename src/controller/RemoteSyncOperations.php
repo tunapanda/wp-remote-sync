@@ -200,7 +200,7 @@ class RemoteSyncOperations {
 								throw new Exception("The saved version is not the one we saved");
 							}
 
-							$syncer->processAttachments($localId);
+							$syncer->processAttachments($localId,$remoteResource->globalId);
 							$localResource->setBaseData($remoteResource->getData());
 							$localResource->save();
 							$this->job->log("* M {$remoteResource->globalId} $localId $label");
@@ -214,7 +214,7 @@ class RemoteSyncOperations {
 
 						else {
 							$syncer->updateResource($localId,$remoteResource->getData());
-							$syncer->processAttachments($localId);
+							$syncer->processAttachments($localId,$remoteResource->globalId);
 							$localResource->setBaseData($remoteResource->getData());
 							$localResource->save();
 							$this->job->log("* U {$remoteResource->globalId} $localId $label");
@@ -226,7 +226,7 @@ class RemoteSyncOperations {
 				else {
 					$localId=$syncer->createResource($remoteResource->getData());
 					try {
-						$syncer->processAttachments($localId);
+						$syncer->processAttachments($localId,$remoteResource->globalId);
 					}
 
 					catch (Exception $e) {
@@ -312,10 +312,12 @@ class RemoteSyncOperations {
 						throw new Exception("Local data doesn't have a revision!");
 
 					RemoteSyncPlugin::instance()->remoteCall("add",array(
-						"globalId"=>$syncResource->globalId,
-						"data"=>json_encode($data),
-						"type"=>$syncResource->type
-					),$syncResource->getResourceAttachments());
+							"globalId"=>$syncResource->globalId,
+							"data"=>json_encode($data),
+							"type"=>$syncResource->type
+						),
+						$syncResource->getResourceAttachments(),
+						$syncResource->localId);
 
 					$syncResource->setBaseData($syncResource->getData());
 					$syncResource->save();
@@ -328,10 +330,12 @@ class RemoteSyncOperations {
 					$label=$syncer->getResourceLabel($data);
 
 					RemoteSyncPlugin::instance()->remoteCall("put",array(
-						"globalId"=>$syncResource->globalId,
-						"baseRevision"=>$syncResource->getBaseRevision(),
-						"data"=>json_encode($data)
-					),$syncResource->getResourceAttachments());
+							"globalId"=>$syncResource->globalId,
+							"baseRevision"=>$syncResource->getBaseRevision(),
+							"data"=>json_encode($data)
+						),
+						$syncResource->getResourceAttachments(),
+						$syncResource->localId);
 
 					$syncResource->setBaseData($syncResource->getData());
 					$syncResource->save();

@@ -11,7 +11,28 @@ class RemoteSyncApi {
 	 * Construct.
 	 */
 	public function __construct() {
-		$this->calls=array("ls","get","put","add","del");
+		$this->calls=array("ls","get","put","add","del","getAttachment");
+	}
+
+	/**
+	 * Get attachment file.
+	 */
+	public function getAttachment($args) {
+		$resource=SyncResource::findOneBy("globalId",$args["globalId"]);
+		if (!$resource)
+			throw new Exception("resource not found, id=".$args["globalId"]);
+
+		$filename=str_replace("{id}",$resource->localId,$args["filename"]);
+		$filename=wp_upload_dir()["basedir"]."/".$filename;
+
+		if (!file_exists($filename))
+			throw new Exception("file doesn't exist: ".$filename);
+
+		$type=mime_content_type($filename);
+		header("Content-Type: $type");
+
+		readfile($filename);
+		exit();
 	}
 
 	/**
@@ -92,7 +113,7 @@ class RemoteSyncApi {
 			throw new Exception("Unable to parse json data");
 
 		$localId=$syncer->createResource($data);
-		$syncer->processAttachments($localId);
+		$syncer->processAttachments($localId,$args["globalId"]);
 
 		$localResource=new SyncResource($syncer->getType());
 		$localResource->localId=$localId;
@@ -129,7 +150,7 @@ class RemoteSyncApi {
 		$syncer=$resource->getSyncer();
 		//$syncer->updateSyncResources();
 		$syncer->updateResource($resource->localId,$data);
-		$syncer->processAttachments($resource->localId);
+		$syncer->processAttachments($resource->localId,$args["globalId"]);
 
 		$resource->save();
 

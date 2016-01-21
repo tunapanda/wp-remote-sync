@@ -43,4 +43,11 @@ class Curl {
 	public function close() {
 		curl_close($this->curl);
 	}
+
+	/**
+	 * Get error.
+	 */
+	public function error() {
+		return curl_error($this->curl);
+	}
 }
