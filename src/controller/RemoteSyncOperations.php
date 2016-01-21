@@ -255,6 +255,12 @@ class RemoteSyncOperations {
 							" r=".$remoteResource->getRevision()
 						);
 
+						$this->job->log("**** local resource ****");
+						$this->job->log(nl2br(htmlspecialchars(json_encode($localResource->getData(),JSON_PRETTY_PRINT))));
+
+						$this->job->log("**** base resource ****");
+						$this->job->log(nl2br(htmlspecialchars(json_encode($localResource->getBaseData(),JSON_PRETTY_PRINT))));
+
 						throw new Exception("versions differ after add, this is unexpected");
 					}
 				}
