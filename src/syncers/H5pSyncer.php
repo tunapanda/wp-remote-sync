@@ -39,10 +39,11 @@ class H5pSyncer extends AResourceSyncer {
 	/**
 	 * Extract attachments.
 	 */
-	private function extractAttachmentsFromParameters($parameters) {
+	public function extractAttachmentsFromParameters($parameters) {
 		$res=array();
 
 		foreach ($parameters as $key=>$value) {
+			$key=strval($key);
 			if ($key=="file" && is_array($value) && isset($value["path"])) {
 				$path=$value["path"];
 				$res[]="h5p/content/{id}/$path";

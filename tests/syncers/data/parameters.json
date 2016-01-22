@@ -1,0 +1,262 @@
+{  
+   "presentation":{  
+      "slides":[  
+         {  
+            "elements":[  
+               {  
+                  "x":1.2014897713598,
+                  "y":4.7394536817102,
+                  "width":98.5559566787,
+                  "height":94.774346793349,
+                  "action":{  
+                     "library":"H5P.Video 1.1",
+                     "params":{  
+                        "fit":true,
+                        "controls":true,
+                        "autoplay":false,
+                        "loop":false,
+                        "l10n":{  
+                           "name":"Video",
+                           "loading":"Video player loading...",
+                           "noPlayers":"Found no video players that supports the given video format.",
+                           "noSources":"Video is missing sources.",
+                           "aborted":"Media playback has been aborted.",
+                           "networkFailure":"Network failure.",
+                           "cannotDecode":"Unable to decode media.",
+                           "formatNotSupported":"Video format not supported.",
+                           "mediaEncrypted":"Media encrypted.",
+                           "unknownError":"Unknown error.",
+                           "invalidYtId":"Invalid YouTube ID.",
+                           "unknownYtId":"Unable to find video with the given YouTube ID.",
+                           "restrictedYt":"The owner of this video does not allow it to be embedded."
+                        },
+                        "sources":[  
+                           {  
+                              "path":"https://www.youtube.com/watch?v=8j0UDiN7my4",
+                              "mime":"video/YouTube",
+                              "copyright":{  
+                                 "license":"U"
+                              }
+                           }
+                        ]
+                     },
+                     "subContentId":"dd072592-3f6d-44b7-bf17-0253989e9613"
+                  },
+                  "alwaysDisplayComments":false,
+                  "backgroundOpacity":0,
+                  "displayAsButton":false,
+                  "invisible":false,
+                  "solution":""
+               }
+            ],
+            "keywords":[  
+
+            ]
+         },
+         {  
+            "elements":[  
+               {  
+                  "x":0,
+                  "y":0,
+                  "width":99.638989169675,
+                  "height":96.912114014252,
+                  "action":{  
+                     "library":"H5P.Video 1.1",
+                     "params":{  
+                        "fit":true,
+                        "controls":true,
+                        "autoplay":false,
+                        "loop":false,
+                        "l10n":{  
+                           "name":"Video",
+                           "loading":"Video player loading...",
+                           "noPlayers":"Found no video players that supports the given video format.",
+                           "noSources":"Video is missing sources.",
+                           "aborted":"Media playback has been aborted.",
+                           "networkFailure":"Network failure.",
+                           "cannotDecode":"Unable to decode media.",
+                           "formatNotSupported":"Video format not supported.",
+                           "mediaEncrypted":"Media encrypted.",
+                           "unknownError":"Unknown error.",
+                           "invalidYtId":"Invalid YouTube ID.",
+                           "unknownYtId":"Unable to find video with the given YouTube ID.",
+                           "restrictedYt":"The owner of this video does not allow it to be embedded."
+                        },
+                        "sources":[  
+                           {  
+                              "path":"https://www.youtube.com/watch?v=lbKMZa-CZ_Y",
+                              "mime":"video/YouTube",
+                              "copyright":{  
+                                 "license":"U"
+                              }
+                           }
+                        ]
+                     },
+                     "subContentId":"eaf130e6-acf6-4eb0-95e5-2ade73ea548e"
+                  },
+                  "alwaysDisplayComments":false,
+                  "backgroundOpacity":0,
+                  "displayAsButton":false,
+                  "invisible":false,
+                  "solution":""
+               }
+            ],
+            "keywords":[  
+
+            ]
+         },
+         {  
+            "elements":[  
+               {  
+                  "x":0,
+                  "y":0,
+                  "width":99.75932611311671,
+                  "height":99.5249406175772,
+                  "action":{  
+                     "library":"H5P.Video 1.1",
+                     "params":{  
+                        "fit":true,
+                        "controls":true,
+                        "autoplay":false,
+                        "loop":false,
+                        "l10n":{  
+                           "name":"Video",
+                           "loading":"Video player loading...",
+                           "noPlayers":"Found no video players that supports the given video format.",
+                           "noSources":"Video is missing sources.",
+                           "aborted":"Media playback has been aborted.",
+                           "networkFailure":"Network failure.",
+                           "cannotDecode":"Unable to decode media.",
+                           "formatNotSupported":"Video format not supported.",
+                           "mediaEncrypted":"Media encrypted.",
+                           "unknownError":"Unknown error.",
+                           "invalidYtId":"Invalid YouTube ID.",
+                           "unknownYtId":"Unable to find video with the given YouTube ID.",
+                           "restrictedYt":"The owner of this video does not allow it to be embedded."
+                        },
+                        "sources":[  
+                           {  
+                              "path":"https://www.youtube.com/watch?v=9mucjcrhFcM",
+                              "mime":"video/YouTube",
+                              "copyright":{  
+                                 "license":"U"
+                              }
+                           }
+                        ]
+                     },
+                     "subContentId":"ada14b8d-7c60-4f82-a874-3dd6d7b0293a"
+                  },
+                  "alwaysDisplayComments":false,
+                  "backgroundOpacity":0,
+                  "displayAsButton":false,
+                  "invisible":false,
+                  "solution":""
+               }
+            ],
+            "keywords":[  
+
+            ]
+         },
+         {  
+            "elements":[  
+               {  
+                  "x":0,
+                  "y":0,
+                  "width":99.638989169675,
+                  "height":99.287410926366,
+                  "action":{  
+                     "library":"H5P.Video 1.1",
+                     "params":{  
+                        "fit":true,
+                        "controls":true,
+                        "autoplay":false,
+                        "loop":false,
+                        "l10n":{  
+                           "name":"Video",
+                           "loading":"Video player loading...",
+                           "noPlayers":"Found no video players that supports the given video format.",
+                           "noSources":"Video is missing sources.",
+                           "aborted":"Media playback has been aborted.",
+                           "networkFailure":"Network failure.",
+                           "cannotDecode":"Unable to decode media.",
+                           "formatNotSupported":"Video format not supported.",
+                           "mediaEncrypted":"Media encrypted.",
+                           "unknownError":"Unknown error.",
+                           "invalidYtId":"Invalid YouTube ID.",
+                           "unknownYtId":"Unable to find video with the given YouTube ID.",
+                           "restrictedYt":"The owner of this video does not allow it to be embedded."
+                        },
+                        "sources":[  
+                           {  
+                              "path":"https://www.youtube.com/watch?v=D1ELEeIs0j8",
+                              "mime":"video/YouTube",
+                              "copyright":{  
+                                 "license":"U"
+                              }
+                           }
+                        ]
+                     },
+                     "subContentId":"95ec342b-9106-4625-8842-a2ac1acc70c5"
+                  },
+                  "alwaysDisplayComments":false,
+                  "backgroundOpacity":0,
+                  "displayAsButton":false,
+                  "invisible":false,
+                  "solution":""
+               }
+            ],
+            "keywords":[  
+
+            ]
+         }
+      ],
+      "keywordListEnabled":true,
+      "keywordListAlwaysShow":false,
+      "keywordListAutoHide":false,
+      "keywordListOpacity":90
+   },
+   "l10n":{  
+      "slide":"Slide",
+      "yourScore":"Your Score",
+      "maxScore":"Max Score",
+      "goodScore":"Congratulations! You got @percent correct!",
+      "okScore":"Nice effort! You got @percent correct!",
+      "badScore":"You got @percent correct.",
+      "Total":"Total",
+      "showSolutions":"Show solutions",
+      "retry":"Retry",
+      "title":"Title",
+      "author":"Author",
+      "lisence":"Lisence",
+      "license":"License",
+      "exportAnswers":"Export text",
+      "copyright":"Rights of use",
+      "hideKeywords":"Hide keywords list",
+      "showKeywords":"Show keywords list",
+      "fullscreen":"Fullscreen",
+      "exitFullscreen":"Exit fullscreen",
+      "prevSlide":"Previous slide",
+      "nextSlide":"Next slide",
+      "currentSlide":"Current slide",
+      "lastSlide":"Last slide",
+      "solutionModeTitle":"Exit solution mode",
+      "solutionModeText":"Solution Mode",
+      "summaryMultipleTaskText":"Multiple tasks",
+      "scoreMessage":"You achieved:",
+      "shareFacebook":"Share on Facebook",
+      "shareTwitter":"Share on Twitter",
+      "summary":"Summary",
+      "solutionsButtonTitle":"Show comments",
+      "printTitle":"Print",
+      "printIngress":"How would you like to print this presentation?",
+      "printAllSlides":"Print all slides",
+      "printCurrentSlide":"Print current slide"
+   },
+   "override":{  
+      "activeSurface":false,
+      "overrideButtons":false,
+      "overrideShowSolutionButton":false,
+      "overrideRetry":false,
+      "hideSummarySlide":false
+   }
+}
