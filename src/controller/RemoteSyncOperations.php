@@ -255,7 +255,7 @@ class RemoteSyncOperations {
 
 					if ($localRev!=$baseRev || $baseRev!=$remoteRev) {
 						$this->job->log(
-							"l=".$localResource->getRevision().
+							"revisions differ: l=".$localResource->getRevision().
 							" b=".$localResource->getBaseRevision().
 							" r=".$remoteResource->getRevision()
 						);
@@ -265,6 +265,9 @@ class RemoteSyncOperations {
 
 						$this->job->log("**** base resource ****");
 						$this->job->log(nl2br(htmlspecialchars(json_encode($localResource->getBaseData(),JSON_PRETTY_PRINT))));
+
+						$syncer->deleteResource($localId);
+						$localResource->delete();
 
 						throw new Exception("versions differ after add, this is unexpected");
 					}

@@ -306,6 +306,10 @@ class H5pSyncer extends AResourceSyncer {
 
 		foreach ($data["libraries"] as $libraryData)
 			$this->ensureDependency($localId,$libraryData);
+
+		$saved=$this->getResource($localId);
+		if ($saved!==$data)
+			throw new Exception("update: the data in the db is not what we saved!");
 	}
 
 	/**
@@ -345,13 +349,22 @@ class H5pSyncer extends AResourceSyncer {
 		$localId=$wpdb->insert_id;
 
 		try {
-			foreach ($data["libraries"] as $libraryData)
+			foreach ($data["libraries"] as $libraryData) {
 				$this->ensureDependency($localId,$libraryData);
+			}
 		}
 
 		catch (Exception $e) {
 			$this->deleteResource($localId);
 			throw $e;
+		}
+
+		$saved=$this->getResource($localId);
+		if ($saved!==$data) {
+			echo "in local db=".sizeof($saved["libraries"])." incoming=".sizeof($data["libraries"])."<br>";
+
+			$this->deleteResource($localId);
+			throw new Exception("create: the data in the db is not what we saved!");
 		}
 
 		return $localId;
