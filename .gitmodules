@@ -1,0 +1,9 @@
+[submodule "submodules/merge3"]
+	path = submodules/merge3
+	url = https://github.com/luqui/merge3.git
+[submodule "submodules/smartrecord"]
+	path = submodules/smartrecord
+	url = https://github.com/limikael/smartrecord.git
+[submodule "submodules/spyc"]
+	path = submodules/spyc
+	url = https://github.com/mustangostang/spyc.git
