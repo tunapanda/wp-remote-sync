@@ -114,6 +114,7 @@ class RemoteSyncApi {
 			throw new Exception("Unable to parse json data");
 
 		$localId=$syncer->createResource($data);
+
 		$localResource=new SyncResource($syncer->getType());
 		$localResource->localId=$localId;
 		$localResource->globalId=$args["globalId"];

@@ -204,7 +204,7 @@ class SyncResource extends SmartRecord {
 	 * Process posted attachments.
 	 */
 	public final function processPostedAttachments() {
-		if (!isset($this->localId) || !$this->localId)
+		if (!isset($this->localId))
 			throw new Exception("Can't process attachments, no local id yet");
 
 		$upload_base_dir=wp_upload_dir()["basedir"];
