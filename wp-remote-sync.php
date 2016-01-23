@@ -7,8 +7,8 @@ require_once __DIR__."/src/model/SyncResource.php";
 Plugin Name: Remote Sync
 Plugin URI: http://github.com/tunapanda/wp-remote-sync
 Description: Sync content with a remote site in a similar way to a distributed version control system.
-Version: 0.0.6
-GitHub Plugin URI: tunapanda/wp-remote-sync
+Version: 0.0.7
+GitHub Plugin URI: https://github.com/h5p/h5p-wordpress
 */
 
 /**
