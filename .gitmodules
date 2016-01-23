@@ -1,9 +1,0 @@
-[submodule "ext/merge3"]
-	path = ext/merge3
-	url = https://github.com/luqui/merge3.git
-[submodule "ext/smartrecord"]
-	path = ext/smartrecord
-	url = https://github.com/limikael/smartrecord.git
-[submodule "ext/spyc"]
-	path = ext/spyc
-	url = https://github.com/mustangostang/spyc.git
