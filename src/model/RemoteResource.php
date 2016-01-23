@@ -20,24 +20,48 @@ class RemoteResource {
 	}
 
 	/**
+	 * Get global id.
+	 */
+	public function getGlobalId() {
+		return $this->globalId;
+	}
+
+	/**
+	 * Fetch from remote.
+	 */
+	private function fetch() {
+		$this->fetched=TRUE;
+
+		$remoteData=RemoteSyncPlugin::instance()->remoteCall("get",array(
+			"type"=>$this->type,
+			"globalId"=>$this->globalId
+		));
+
+		if (!$remoteData)
+			throw new Exception("Unable to fetch remote data.");
+
+		$this->data=$remoteData["data"];
+		$this->attachments=$remoteData["attachments"];
+	}
+
+	/**
 	 * Get data.
 	 */
 	public function getData() {
-		if (!$this->fetched) {
-			$this->fetched=true;
-
-			$getData=RemoteSyncPlugin::instance()->remoteCall("get",array(
-				"type"=>$this->type,
-				"globalId"=>$this->globalId
-			));
-
-			if (!$getData)
-				throw new Exception("Unable to fetch remote data.");
-
-			$this->data=$getData["data"];
-		}
+		if (!$this->fetched)
+			$this->fetch();
 
 		return $this->data;
+	}
+
+	/**
+	 * Get attachments.
+	 */
+	public function getAttachments() {
+		if (!$this->fetched)
+			$this->fetch();
+
+		return $this->attachments;
 	}
 
 	/**

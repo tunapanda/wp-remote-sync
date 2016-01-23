@@ -47,6 +47,36 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 		$this->assertEquals("something",$resource["data"]["post_content"]);
 	}
 
+	function test_get_attachment() {
+		RemoteSyncPlugin::instance()->install();
+
+		$api=new RemoteSyncApi();
+
+		$id=wp_insert_post(array(
+			"post_title"=>"hello",
+			"post_type"=>"attachment",
+			"post_content"=>"something"
+		));
+
+		update_post_meta($id,"_wp_attached_file","helloworld");
+
+		$syncer=RemoteSyncPlugin::instance()->getSyncerByType("attachment");
+		$attachments=$syncer->getResourceAttachments($id);
+		$this->assertEquals($attachments,array(
+			"helloworld"
+		));
+
+		$res=$api->ls(array("type"=>"attachment"));
+		$this->assertCount(1,$res);
+
+		$globalId=$res[0]["globalId"];
+		$resource=$api->get(array("globalId"=>$globalId));
+
+		$this->assertEquals($resource["attachments"],array(
+			"helloworld"
+		));
+	}
+
 	function test_doApiCall(){
 		RemoteSyncPlugin::instance()->install();
 		$id=wp_insert_post(array(

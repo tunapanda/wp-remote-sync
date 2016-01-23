@@ -200,7 +200,8 @@ class RemoteSyncOperations {
 								throw new Exception("The saved version is not the one we saved");
 							}
 
-							$syncer->processAttachments($localId,$remoteResource->globalId);
+							$localResource->downloadAttachments($remoteResource);
+							//$syncer->processAttachments($localId,$remoteResource->globalId);
 							$localResource->setBaseData($remoteResource->getData());
 							$localResource->save();
 							$this->job->log("* M {$remoteResource->globalId} $localId $label");
@@ -209,12 +210,13 @@ class RemoteSyncOperations {
 							$remoteRev=$remoteResource->getRevision();
 							$baseRev=$localResource->getBaseRevision();
 
-							$this->job->log("l=".$localRev." r=".$remoteRev." b=".$baseRev);
+							//$this->job->log("l=".$localRev." r=".$remoteRev." b=".$baseRev);
 						}
 
 						else {
 							$syncer->updateResource($localId,$remoteResource->getData());
-							$syncer->processAttachments($localId,$remoteResource->globalId);
+							//$syncer->processAttachments($localId,$remoteResource->globalId);
+							$localResource->downloadAttachments($remoteResource);
 							$localResource->setBaseData($remoteResource->getData());
 							$localResource->save();
 							$this->job->log("* U {$remoteResource->globalId} $localId $label");
@@ -225,20 +227,23 @@ class RemoteSyncOperations {
 				// Doesn't exist locally.
 				else {
 					$localId=$syncer->createResource($remoteResource->getData());
-					try {
-						$syncer->processAttachments($localId,$remoteResource->globalId);
-					}
-
-					catch (Exception $e) {
-						$syncer->deleteResource($localId);
-						throw $e;
-					}
 
 					$localResource=new SyncResource($syncer->getType());
 					$localResource->localId=$localId;
 					$localResource->globalId=$remoteResource->globalId;
 					$localResource->setBaseData($remoteResource->getData());
 					$localResource->save();
+
+					try {
+						//processAttachments
+						$localResource->downloadAttachments($remoteResource);
+					}
+
+					catch (Exception $e) {
+						$syncer->deleteResource($localId);
+						$localResource->delete();
+						throw $e;
+					}
 
 					$label=$remoteResource->getLabel();
 
@@ -316,8 +321,7 @@ class RemoteSyncOperations {
 							"data"=>json_encode($data),
 							"type"=>$syncResource->type
 						),
-						$syncResource->getResourceAttachments(),
-						$syncResource->localId);
+						$syncResource->getAttachmentEntries());
 
 					$syncResource->setBaseData($syncResource->getData());
 					$syncResource->save();
@@ -334,8 +338,7 @@ class RemoteSyncOperations {
 							"baseRevision"=>$syncResource->getBaseRevision(),
 							"data"=>json_encode($data)
 						),
-						$syncResource->getResourceAttachments(),
-						$syncResource->localId);
+						$syncResource->getAttachmentEntries());
 
 					$syncResource->setBaseData($syncResource->getData());
 					$syncResource->save();

@@ -42,7 +42,6 @@ class AResourceSyncerTest extends WP_UnitTestCase {
 		$base=array("hello"=>array(1,2,3));
 		$local=array("hello"=>array(1,2,5));
 		$remote=array("hello"=>array(1,2,3));
-
 	}
 }
 

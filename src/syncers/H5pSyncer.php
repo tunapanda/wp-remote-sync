@@ -37,20 +37,30 @@ class H5pSyncer extends AResourceSyncer {
 	}
 
 	/**
-	 * Extract attachments.
+	 * scandir recursive
 	 */
-	public function extractAttachmentsFromParameters($parameters) {
+	private function scandirRecursive($basedir, $subdir="") {
 		$res=array();
+		$files=scandir($basedir."/".$subdir);
 
-		foreach ($parameters as $key=>$value) {
-			$key=strval($key);
-			if ($key=="file" && is_array($value) && isset($value["path"])) {
-				$path=$value["path"];
-				$res[]="h5p/content/{id}/$path";
+		foreach ($files as $file) {
+			if ($file[0]!=".") {
+				if (is_dir($basedir."/".$subdir."/".$file)) {
+					if ($subdir)
+						$res=array_merge($res,$this->scandirRecursive($basedir,"$subdir/$file"));
+
+					else
+						$res=array_merge($res,$this->scandirRecursive($basedir,$file));
+				}
+
+				else {
+					if ($subdir)
+						$res[]="$subdir/$file";
+
+					else
+						$res[]=$file;
+				}
 			}
-
-			else if (is_array($value))
-				$res=array_merge($res,$this->extractAttachmentsFromParameters($value));
 		}
 
 		return $res;
@@ -60,21 +70,16 @@ class H5pSyncer extends AResourceSyncer {
 	 * Get resource attachments.
 	 */
 	public function getResourceAttachments($localId) {
-		global $wpdb;
+		$uploadBasedir=wp_upload_dir()["basedir"];
+		$attachmentDir=$uploadBasedir."/h5p/content/$localId/";
 
-		$q=$wpdb->prepare("SELECT * FROM wp_h5p_contents WHERE id=%s",$localId);
-		$h5p=$wpdb->get_row($q,ARRAY_A);
+		if (!file_exists($attachmentDir))
+			return array();
 
-		if ($wpdb->last_error)
-			throw new Exception($wpdb->last_error);
-
-		if (!$h5p)
-			throw new Exception("H5P entry not found for attachments");
-
-		//echo $h5p["parameters"];
-
-		$json=json_decode($h5p["parameters"],TRUE);
-		$res=$this->extractAttachmentsFromParameters($json);
+		$res=array();
+		$allfiles=$this->scandirRecursive($attachmentDir);
+		foreach ($allfiles as $file)
+			$res[]="h5p/content/{id}/$file";
 
 		return $res;
 	}

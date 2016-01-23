@@ -5,6 +5,7 @@ require_once __DIR__."/../../src/syncers/PostSyncer.php";
 class PostSyncerTest extends WP_UnitTestCase {
 
 	function test_ls() {
+		RemoteSyncPlugin::instance()->syncers=NULL;
 		RemoteSyncPlugin::instance()->install();
 
 		$api=new RemoteSyncApi();

@@ -20,7 +20,7 @@ class RemoteSyncApi {
 	public function getAttachment($args) {
 		$resource=SyncResource::findOneBy("globalId",$args["globalId"]);
 		if (!$resource)
-			throw new Exception("resource not found, id=".$args["globalId"]);
+			throw new Exception("resource not found, globalId=".$args["globalId"]);
 
 		$filename=str_replace("{id}",$resource->localId,$args["filename"]);
 		$filename=wp_upload_dir()["basedir"]."/".$filename;
@@ -86,7 +86,8 @@ class RemoteSyncApi {
 			"globalId"=>$resource->globalId,
 			"revision"=>$resource->getRevision(),
 			"type"=>$resource->type,
-			"data"=>$resource->getData()
+			"data"=>$resource->getData(),
+			"attachments"=>$resource->getAttachments()
 		);
 	}
 
@@ -113,11 +114,19 @@ class RemoteSyncApi {
 			throw new Exception("Unable to parse json data");
 
 		$localId=$syncer->createResource($data);
-		$syncer->processAttachments($localId,$args["globalId"]);
-
 		$localResource=new SyncResource($syncer->getType());
 		$localResource->localId=$localId;
 		$localResource->globalId=$args["globalId"];
+
+		try {
+			$localResource->processPostedAttachments();
+		}
+
+		catch (Exception $e) {
+			$syncer->deleteResource($localId);
+			throw $e;
+		}
+
 		$localResource->save();
 
 		return array(
@@ -148,9 +157,8 @@ class RemoteSyncApi {
 			throw new Exception("Unable to parse json data");
 
 		$syncer=$resource->getSyncer();
-		//$syncer->updateSyncResources();
 		$syncer->updateResource($resource->localId,$data);
-		$syncer->processAttachments($resource->localId,$args["globalId"]);
+		$resource->processPostedAttachments();
 
 		$resource->save();
 

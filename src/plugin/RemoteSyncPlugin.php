@@ -92,10 +92,7 @@ class RemoteSyncPlugin extends Singleton {
 	/**
 	 * Make a call to the remote.
 	 */
-	public function remoteCall($method, $args=array(), $attachments=array(), $attachmentLocalId=NULL) {
-		if ($attachments && !$attachmentLocalId)
-			throw new Exception("got attachment but no local id");
-
+	public function remoteCall($method, $args=array(), $attachments=array()) {
 		$args["action"]=$method;
 		$args["key"]=get_option("rs_access_key");
 		$url=get_option("rs_remote_site_url");
@@ -109,19 +106,12 @@ class RemoteSyncPlugin extends Singleton {
 		$curl->setopt(CURLOPT_POST,1);
 		$postfields=$args;
 
-		if ($attachments) {
-			$upload_base_dir=wp_upload_dir()["basedir"];
-
-			foreach ($attachments as $attachment) {
-				$attachmentfilename=
-					$upload_base_dir."/".
-					str_replace("{id}",$attachmentLocalId,$attachment);
-
-				$postfields[$attachment]=new CurlFile(
-					$attachmentfilename,
-					"text/plain"
-				);
-			}
+		foreach ($attachments as $fieldname=>$filename) {
+			$postfields[$fieldname]=new CurlFile(
+				$filename,
+				"text/plain",
+				$fieldname
+			);
 		}
 
 		$curl->setopt(CURLOPT_POSTFIELDS,$postfields);

@@ -13,6 +13,7 @@ class SyncResource extends SmartRecord {
 	public function __construct($type=NULL) {
 		$this->type=$type;
 		$this->dataFetched=FALSE;
+		$this->Curl="Curl";
 	}
 
 	/**
@@ -100,10 +101,27 @@ class SyncResource extends SmartRecord {
 	}
 
 	/**
-	 * Get resource attachments.
+	 * Get attachments.
 	 */
-	public function getResourceAttachments() {
+	public function getAttachments() {
 		return $this->getSyncer()->getResourceAttachments($this->localId);
+	}
+
+	/**
+	 * Get attachment entries, an array on the form:
+	 *   <formfield> => <file>
+	 */
+	public function getAttachmentEntries() {
+		$uploadBasedir=wp_upload_dir()["basedir"];
+
+		$attachments=$this->getAttachments();
+		$res=array();
+
+		foreach ($attachments as $attachment)
+			$res[urlencode($attachment)]=
+				$uploadBasedir."/".str_replace("{id}",$this->localId,$attachment);
+
+		return $res;
 	}
 
 	/**
@@ -119,5 +137,95 @@ class SyncResource extends SmartRecord {
 	public function getLabel() {
 		$data=$this->getData();
 		return $this->getSyncer()->getResourceLabel($data);
+	}
+
+	/**
+	 * Download one attachment.
+	 */
+	private function downloadAttachment($attachment, $remoteResource) {
+		$uploadBasedir=wp_upload_dir()["basedir"];
+		$localFilename=str_replace("{id}",$this->localId,"$uploadBasedir/$attachment");
+		if (file_exists($localFilename))
+			return;
+
+		$url=get_option("rs_remote_site_url");
+		if (!$url)
+			throw new Exception("Remote site url not set for fetching attachment.");
+
+		$url.="/wp-content/plugins/wp-remote-sync/api.php";
+
+		$params=array(
+			"action"=>"getAttachment",
+			"key"=>get_option("rs_access_key",""),
+			"filename"=>$attachment,
+			"globalId"=>$remoteResource->globalId
+		);
+
+		$url.="?".http_build_query($params);
+
+		$dir=dirname($localFilename);
+		if (!is_dir($dir)) {
+			if (!mkdir($dir,0777,TRUE))
+				throw new Exception("Unable to create directory: ".$dir);
+		}
+
+		$outf=fopen($localFilename,"wb");
+		if (!$outf)
+			throw new Exception("Unable to write attachment file: ".$localFilename);
+
+		$curl=new $this->Curl($url);
+		$curl->setopt(CURLOPT_FILE,$outf);
+		$curl->setopt(CURLOPT_HEADER,0);
+		$curl->exec();
+		fclose($outf);
+
+		if ($curl->error()) {
+			@unlink($localFilename);
+			throw new Exception($curl->error());
+		}
+
+		if ($curl->getinfo(CURLINFO_HTTP_CODE)!=200) {
+			@unlink($localFilename);
+			throw new Exception($url.": HTTP Error: ".$curl->getinfo(CURLINFO_HTTP_CODE));
+		}
+	}
+
+	/**
+	 * Download attachments from remote.
+	 */
+	public function downloadAttachments($remoteResource) {
+		$attachments=$remoteResource->getAttachments();
+
+		foreach ($attachments as $attachment)
+			$this->downloadAttachment($attachment,$remoteResource);
+	}
+
+	/**
+	 * Process posted attachments.
+	 */
+	public final function processPostedAttachments() {
+		if (!isset($this->localId) || !$this->localId)
+			throw new Exception("Can't process attachments, no local id yet");
+
+		$upload_base_dir=wp_upload_dir()["basedir"];
+
+		foreach ($_FILES as $uploadedFile) {
+			if ($uploadedFile["error"])
+				throw new Exception("Unable to process uploaded file: ".$uploadedFile["error"]);
+
+			$fileName=urldecode($uploadedFile["name"]);
+			$fileName=str_replace("{id}",$this->localId,$fileName);
+			$targetFileName=$upload_base_dir."/".$fileName;
+			$dir=dirname($targetFileName);
+
+			if (!file_exists($dir)) {
+				if (!mkdir($dir,0777,TRUE))
+					throw new Exception("Unable to create directory: ".$dir);
+			}
+
+			$res=copy($uploadedFile["tmp_name"],$targetFileName);
+			if (!$res)
+				throw new Exception("Unable to copy uploaded file");
+		}
 	}
 }
