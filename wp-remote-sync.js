@@ -80,7 +80,7 @@ function startSyncOperation(url) {
 
 	source.addEventListener("status", function(ev) {
 		var data = JSON.parse(ev.data);
-		console.log("status: "+data.message);
+		//console.log("status: "+data.message);
 		jobs(data.message);
 	});
 }

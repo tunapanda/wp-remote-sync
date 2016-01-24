@@ -52,7 +52,7 @@ class EventStream {
 		$now=time();
 
 		if ($message==$this->currentStatus) {
-			if ($percent==$this->currentPercent)
+			if ($percent==$this->currentStatusPercent)
 				return;
 
 			if ($now==$this->currentStatusTime)
