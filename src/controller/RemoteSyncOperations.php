@@ -1,7 +1,7 @@
 <?php
 
-require_once __DIR__."/../utils/LongRunJob.php";
 require_once __DIR__."/../model/RemoteResource.php";
+require_once __DIR__."/../utils/EventStream.php";
 
 /**
  * Handle user operations.
@@ -31,12 +31,10 @@ class RemoteSyncOperations {
 	 * Handle api call.
 	 */
 	public function handleOperation($operation) {
-		$link=get_site_url()."/wp-admin/options-general.php?page=rs_settings";
-		$afterText="<hr/><a href='$link' class='button'>Back</a>";
-
-		$this->job=new LongRunJob();
-		$this->job->setAfterText($afterText);
+		$this->job=new EventStream();
 		$this->job->start();
+
+		RemoteSyncPlugin::instance()->setLongRunJob($this->job);
 
 		set_exception_handler(array($this,"handleException"));
 
@@ -46,6 +44,8 @@ class RemoteSyncOperations {
 
 		call_user_func(array($this,$operation));
 
+		$this->job->log("");
+		$this->job->log("Done!");
 		$this->job->done();
 	}
 
@@ -200,8 +200,8 @@ class RemoteSyncOperations {
 								throw new Exception("The saved version is not the one we saved");
 							}
 
+							$localResource->setJob($this->job);
 							$localResource->downloadAttachments($remoteResource);
-							//$syncer->processAttachments($localId,$remoteResource->globalId);
 							$localResource->setBaseData($remoteResource->getData());
 							$localResource->save();
 							$this->job->log("* M {$remoteResource->globalId} $localId $label");
@@ -209,13 +209,11 @@ class RemoteSyncOperations {
 							$localRev=$localResource->getRevision();
 							$remoteRev=$remoteResource->getRevision();
 							$baseRev=$localResource->getBaseRevision();
-
-							//$this->job->log("l=".$localRev." r=".$remoteRev." b=".$baseRev);
 						}
 
 						else {
 							$syncer->updateResource($localId,$remoteResource->getData());
-							//$syncer->processAttachments($localId,$remoteResource->globalId);
+							$localResource->setJob($this->job);
 							$localResource->downloadAttachments($remoteResource);
 							$localResource->setBaseData($remoteResource->getData());
 							$localResource->save();
@@ -235,7 +233,7 @@ class RemoteSyncOperations {
 					$localResource->save();
 
 					try {
-						//processAttachments
+						$localResource->setJob($this->job);
 						$localResource->downloadAttachments($remoteResource);
 					}
 
@@ -319,6 +317,7 @@ class RemoteSyncOperations {
 					if (!$syncResource->getRevision())
 						throw new Exception("Local data doesn't have a revision!");
 
+					RemoteSyncPlugin::instance()->setCallMessage("Uploading '$label'...");
 					RemoteSyncPlugin::instance()->remoteCall("add",array(
 							"globalId"=>$syncResource->globalId,
 							"data"=>json_encode($data),
@@ -336,6 +335,7 @@ class RemoteSyncOperations {
 					$data=$syncResource->getData();
 					$label=$syncer->getResourceLabel($data);
 
+					RemoteSyncPlugin::instance()->setCallMessage("Uploading '$label'...");
 					RemoteSyncPlugin::instance()->remoteCall("put",array(
 							"globalId"=>$syncResource->globalId,
 							"baseRevision"=>$syncResource->getBaseRevision(),

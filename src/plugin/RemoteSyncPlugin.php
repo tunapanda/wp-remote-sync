@@ -21,6 +21,10 @@ class RemoteSyncPlugin extends Singleton {
 		$this->api=NULL;
 		$this->operations=NULL;
 		$this->Curl="Curl";
+		$this->job=NULL;
+
+		$this->callMessage="Syncing...";
+		$this->lastPrintedMessage="";
 	}
 
 	/**
@@ -90,9 +94,46 @@ class RemoteSyncPlugin extends Singleton {
 	}
 
 	/**
+	 * Curl progress.
+	 */
+	public function remoteCallCurlProgress($id, $downTotal, $down, $upTotal, $up) {
+		if (!$this->job)
+			return;
+
+		$percent=0;
+
+		if ($upTotal && $up<$upTotal)
+			$percent=round(100*$up/$upTotal);
+
+		else if ($downTotal && $down<$downTotal)
+			$percent=round(100*$down/$downTotal);
+
+		$this->job->progressStatus($this->callMessage,$percent);
+	}
+
+	/**
+	 * Set long run job.
+	 */
+	public function setLongRunJob($job) {
+		$this->job=$job;
+	}
+
+	/**
+	 * Set the message to show for next remote calls.
+	 */
+	public function setCallMessage($message) {
+		$this->callMessage=$message;
+	}
+
+	/**
 	 * Make a call to the remote.
 	 */
 	public function remoteCall($method, $args=array(), $attachments=array()) {
+		$this->lastPrintedMessage="";
+
+		if ($this->job)
+			$this->job->status($this->callMessage);
+
 		$args["action"]=$method;
 		$args["key"]=get_option("rs_access_key");
 		$url=get_option("rs_remote_site_url");
@@ -104,6 +145,8 @@ class RemoteSyncPlugin extends Singleton {
 		$curl=new $this->Curl($url);
 		$curl->setopt(CURLOPT_RETURNTRANSFER,TRUE);
 		$curl->setopt(CURLOPT_POST,1);
+		$curl->setopt(CURLOPT_NOPROGRESS,FALSE);
+		$curl->setopt(CURLOPT_PROGRESSFUNCTION,array($this,"remoteCallCurlProgress"));
 		$postfields=$args;
 
 		foreach ($attachments as $fieldname=>$filename) {
@@ -135,6 +178,11 @@ class RemoteSyncPlugin extends Singleton {
 
 		if (array_key_exists("Error", $parsedRes))
 			throw new Exception($parsedRes["Error"]);
+
+		if ($this->job)
+			$this->job->status("");
+
+		$this->callMessage="Syncing...";
 
 		return $parsedRes;
 	}

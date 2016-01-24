@@ -1,0 +1,17 @@
+.job-output-holder {
+	width: 100%;
+}
+
+#job-output {
+	width: calc(100% - 20px);
+	height: 200px;
+	font-family: monospace;
+	background: #000000;
+	color: #00ff00;
+}
+
+#job-back-button {
+	pointer-events: none;
+	cursor: default;
+	opacity: .5;
+}

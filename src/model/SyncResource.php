@@ -14,6 +14,14 @@ class SyncResource extends SmartRecord {
 		$this->type=$type;
 		$this->dataFetched=FALSE;
 		$this->Curl="Curl";
+		$this->job=NULL;
+	}
+
+	/**
+	 * Set reference to job for output.
+	 */
+	public function setJob($job) {
+		$this->job=$job;
 	}
 
 	/**
@@ -140,9 +148,32 @@ class SyncResource extends SmartRecord {
 	}
 
 	/**
+	 * Progress when downloading.
+	 */
+	public function downloadCurlProgress($id, $downTotal, $down, $upTotal, $up) {
+		if (!$this->job)
+			return;
+
+		$percent=0;
+
+		if ($upTotal && $up<$upTotal)
+			$percent=round(100*$up/$upTotal);
+
+		else if ($downTotal && $down<$downTotal)
+			$percent=round(100*$down/$downTotal);
+
+		$this->job->progressStatus($this->downloadMessage,$percent);
+	}
+
+	/**
 	 * Download one attachment.
 	 */
 	private function downloadAttachment($attachment, $remoteResource) {
+		if ($this->job) {
+			$this->downloadMessage="Downloading: '".$attachment."'";
+			$this->job->status($this->downloadMessage);
+		}
+
 		$uploadBasedir=wp_upload_dir()["basedir"];
 		$localFilename=str_replace("{id}",$this->localId,"$uploadBasedir/$attachment");
 		if (file_exists($localFilename))
@@ -176,6 +207,8 @@ class SyncResource extends SmartRecord {
 		$curl=new $this->Curl($url);
 		$curl->setopt(CURLOPT_FILE,$outf);
 		$curl->setopt(CURLOPT_HEADER,0);
+		$curl->setopt(CURLOPT_NOPROGRESS,FALSE);
+		$curl->setopt(CURLOPT_PROGRESSFUNCTION,array($this,"downloadCurlProgress"));
 		$curl->exec();
 		fclose($outf);
 

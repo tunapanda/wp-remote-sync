@@ -53,8 +53,21 @@ function rs_create_settings_page() {
  * Create operations page.
  */
 function rs_create_operations_page() {
+	echo "<style>";
+	require __DIR__."/wp-remote-sync.css";
+	echo "</style>";
+
+	echo "<script>";
+	require __DIR__."/wp-remote-sync.js";
+	echo "</script>";
+
 	require __DIR__."/tpl/operations.tpl.php";
-	RemoteSyncPlugin::instance()->getOperations()->handleOperation($_REQUEST["action"]);
+
+	$url=plugins_url()."/wp-remote-sync/op.php?action=".$_REQUEST["action"];
+
+	echo "<script>startSyncOperation('$url');</script>";
+
+//	RemoteSyncPlugin::instance()->getOperations()->handleOperation($_REQUEST["action"]);
 }
 
 add_action('admin_menu','rs_admin_menu');

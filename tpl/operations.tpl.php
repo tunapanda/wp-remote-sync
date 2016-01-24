@@ -6,3 +6,6 @@
     </p>
 </div>
 <hr/>
+<textarea id="job-output"></textarea>
+<hr/>
+<a href='<?php echo get_site_url()."/wp-admin/options-general.php?page=rs_settings"?>' class='button' id='job-back-button'>Back</a>
