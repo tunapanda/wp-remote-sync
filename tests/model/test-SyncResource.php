@@ -1,68 +1,106 @@
 <?php
 
 require_once __DIR__."/../../src/model/SyncResource.php";
-require_once __DIR__."/../../src/syncers/H5pSyncer.php";
 require_once __DIR__."/../../src/utils/MockCurl.php";
+require_once __DIR__."/../../src/plugin/AResourceSyncer.php";
+
+class SRTestSyncer extends AResourceSyncer {
+
+	public function listResourceSlugs() {
+		return array("slug1","onlylocal");
+	}
+
+	public function getResource($slug) {
+		if ($slug=="does_not_exist")
+			return NULL;
+
+		if ($slug=="onlyremote")
+			return NULL;
+
+		return array(
+			"data"=>"hello"
+		);
+	}
+
+	public function updateResource($slug, $data) {
+	}
+
+	public function deleteResource($slug) {
+	}
+}
 
 class SyncResourceTest extends WP_UnitTestCase {
 
-	function test_getAttachmentEntries() {
-		RemoteSyncPlugin::instance()->install();
-		RemoteSyncPlugin::instance()->syncers=array(
-			new H5pSyncer()
+	function setUp() {
+		global $wpdb;
+
+		parent::setUp();
+
+		$wpdb->query(
+			"CREATE TABLE {$wpdb->prefix}h5p_contents ( ".
+			"id INTEGER NOT NULL auto_increment, ".
+			"slug VARCHAR(255) not null, ".
+			"PRIMARY KEY(id))"
 		);
 
-		$uploadBasedir=wp_upload_dir()["basedir"];
-		if (!file_exists($uploadBasedir."/h5p/content/999/images/"))
-			mkdir($uploadBasedir."/h5p/content/999/images/",0777,TRUE);
-
-		file_put_contents($uploadBasedir."/h5p/content/999/images/test.txt","hello");
-
-		$syncResource=new SyncResource("h5p");
-		$syncResource->localId=999;
-		$entries=$syncResource->getAttachmentEntries();
-
-		$this->assertEquals($entries,array(
-			"h5p%2Fcontent%2F%7Bid%7D%2Fimages%2Ftest.txt"=>
-				$uploadBasedir."/h5p/content/999/images/test.txt"
-		));
+		if ($wpdb->last_error)
+			throw new Exception($wpdb->last_error);
 	}
 
 	function test_downloadAttachments() {
-		if (file_exists(wp_upload_dir()["basedir"]."/hello777world"))
-			@unlink(wp_upload_dir()["basedir"]."/hello777world");
+		global $wpdb;
 
-		update_option("rs_remote_site_url","hellosite");
-
-		RemoteSyncPlugin::instance()->syncers=NULL;
+		RemoteSyncPlugin::instance()->syncers=array(new H5pSyncer());
 		RemoteSyncPlugin::instance()->install();
+		RemoteSyncPlugin::instance()->Curl="MockCurl";
 
-		$remoteResource=new RemoteResource("attachment","global=123","123");
-		$remoteResource->fetched=TRUE;
-		$remoteResource->attachments=array(
-			"hello{id}world"
+		$data=array(
+			"test"=>"bla"
 		);
+
+		$rev=md5(json_encode($data));
 
 		MockCurl::reset();
-		MockCurl::$execResults[]="hello remote file";
+		MockCurl::mockResultJson(array(
+			array("slug"=>"the-slug","revision"=>$rev)
+		));
 
-		$syncResource=new SyncResource("attachment");
+		MockCurl::MockResultJson(array(
+			"slug"=>"the-slug",
+			"revision"=>$rev,
+			"type"=>"h5p",
+			"data"=>$data,
+			"attachments"=>array(
+				"an/attached/file.txt"
+			)
+		));
+
+		update_option("rs_remote_site_url","http://example.com/");
+
+		$wpdb->query("INSERT INTO {$wpdb->prefix}h5p_contents (id,slug) values (777,'the-slug')");
+		if ($wpdb->last_error)
+			throw new Exception($wpdb->last_error);
+
+		$syncResources=SyncResource::findAllForType("h5p",
+			SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE);
+
+		$this->assertEquals(1,sizeof($syncResources));
+		$syncResource=$syncResources[0];
+
+		$upload_base_dir=wp_upload_dir()["basedir"];
+		if (file_exists($upload_base_dir."/h5p/content/777//an/attached/file.txt"))
+			unlink($upload_base_dir."/h5p/content/777//an/attached/file.txt");
+
+		MockCurl::mockResult("hello world");
 		$syncResource->Curl="MockCurl";
-		$syncResource->localId=777;
-		$syncResource->downloadAttachments($remoteResource);
+		$syncResource->downloadAttachments();
 
-		$this->assertEquals(sizeof(MockCurl::$instances),1);
-		$mockCurl=MockCurl::$instances[0];
-
-		$this->assertEquals(
-			$mockCurl->opt[CURLOPT_URL],
-			"hellosite/wp-content/plugins/wp-remote-sync/api.php?action=getAttachment&key=&filename=hello%7Bid%7Dworld&globalId=global%3D123"
-		);
-
-		$this->assertTrue(file_exists(wp_upload_dir()["basedir"]."/hello777world"));
+		$this->assertTrue(file_exists($upload_base_dir."/h5p/content/777//an/attached/file.txt"));
+		$content=file_get_contents($upload_base_dir."/h5p/content/777//an/attached/file.txt");
+		$this->assertEquals($content,"hello world");
 	}
 
-	function test_postedAttachments() {
+	/*function test_postedAttachments() {
 		$syncResource=new SyncResource("attachment");
 
 		$upload_base_dir=wp_upload_dir()["basedir"];
@@ -85,5 +123,131 @@ class SyncResourceTest extends WP_UnitTestCase {
 		$upload_base_dir=wp_upload_dir()["basedir"];
 		$f=file_get_contents($upload_base_dir."/some/dir/123/here/it/is.txt");
 		$this->assertEquals($f,"hello world");
+	}*/
+
+	function test_findAllForType() {
+		RemoteSyncPlugin::instance()->syncers=array(new SRTestSyncer("testType"));
+		RemoteSyncPlugin::instance()->install();
+
+		$syncResource=new SyncResource("testType","slug1");
+		$syncResource->save();
+
+		$syncResource=new SyncResource("testType","slug2");
+		$syncResource->save();
+
+		$syncResources=SyncResource::findAllForType("testType");
+		$this->assertEquals(2,sizeof($syncResources));
+	}
+
+	function test_findAllForTypeLocal() {
+		RemoteSyncPlugin::instance()->syncers=array(new SRTestSyncer("testType"));
+		RemoteSyncPlugin::instance()->install();
+
+		$syncResource=new SyncResource("testType","slug1");
+		$syncResource->save();
+
+		$syncResource=new SyncResource("testType","slug2");
+		$syncResource->save();
+
+		$syncResources=SyncResource::findAllForType("testType",
+			SyncResource::POPULATE_LOCAL);
+
+		$this->assertEquals(3,sizeof($syncResources));
+	}
+
+	function test_findOneBySlug() {
+		RemoteSyncPlugin::instance()->syncers=array(new SRTestSyncer("testType"));
+		RemoteSyncPlugin::instance()->install();
+
+		$syncResource=new SyncResource("testType","slug1");
+		$syncResource->save();
+
+		$syncResource=SyncResource::findOneForType("testType","slug1");
+		$this->assertEquals($syncResource->getSlug(),"slug1");
+
+		$syncResource=SyncResource::findOneForType("testType","otherslug");
+		$this->assertEquals($syncResource->getSlug(),"otherslug");
+
+		$syncResource=SyncResource::findOneForType("testType","does_not_exist");
+		$this->assertEquals($syncResource,NULL);
+	}
+
+	function test_findAllForTypeRemote() {
+		update_option("rs_remote_site_url","helloworld");
+
+		MockCurl::reset();
+		MockCurl::$execResults[]=json_encode(array(
+			array("slug"=>"onlyremote","revision"=>123),
+			array("slug"=>"slug1","revision"=>123)
+		));
+
+		RemoteSyncPlugin::instance()->syncers=array(new SRTestSyncer("testType"));
+		RemoteSyncPlugin::instance()->install();
+		RemoteSyncPlugin::instance()->Curl="MockCurl";
+
+		$syncResource=new SyncResource("testType","slug1");
+		$syncResource->save();
+
+		$syncResource=new SyncResource("testType","slug2");
+		$syncResource->save();
+
+		$syncResources=SyncResource::findAllForType("testType",
+			SyncResource::POPULATE_REMOTE);
+
+		$this->assertEquals(3,sizeof($syncResources));
+
+		$syncResources[0]->getRemoteResource();
+		$syncResources[1]->getRemoteResource();
+		$syncResources[2]->getRemoteResource();
+	}
+
+	function test_getResourceData() {
+		RemoteSyncPlugin::instance()->syncers=array(new SRTestSyncer("testType"));
+		RemoteSyncPlugin::instance()->install();
+
+		$syncResource=new SyncResource("testType","slug1");
+		$this->assertEquals($syncResource->getData(),
+			array(
+				"data"=>"hello"
+			)
+		);
+
+		$this->assertEquals($syncResource->getLocalRevision(),
+			"05a1ad082ad35cad7aac7b18e232feb3");
+	}
+
+	function test_state() {
+		update_option("rs_remote_site_url","helloworld");
+
+		RemoteSyncPlugin::instance()->syncers=array(new SRTestSyncer("testType"));
+		RemoteSyncPlugin::instance()->install();
+
+		$syncer=RemoteSyncPlugin::instance()->getSyncerByType("testType");
+		$data=$syncer->getResource("slug1");
+		$rev=md5(json_encode($data));
+
+		MockCurl::reset();
+		MockCurl::$execResults[]=json_encode(array(
+			array("slug"=>"onlyremote","revision"=>"05a1ad082ad35cad7aac7b18e232feb3"),
+			array("slug"=>"slug1","revision"=>$rev)
+		));
+
+		$syncResources=SyncResource::findAllForType("testType",
+			SyncResource::POPULATE_REMOTE|SyncResource::POPULATE_LOCAL);
+
+		$a=array();
+		foreach ($syncResources as $syncResource)
+			$a[$syncResource->getSlug()]=$syncResource;
+
+		//echo "l: ".sizeof($syncResources);
+
+		$syncResource=$syncResources[0];
+
+		$data=$syncResource->getData();
+		$rev=$syncResource->getLocalRevision();
+
+		$this->assertEquals($a["onlyremote"]->getState(),SyncResource::NEW_REMOTE);
+		$this->assertEquals($a["onlylocal"]->getState(),SyncResource::NEW_LOCAL);
+		$this->assertEquals($a["slug1"]->getState(),SyncResource::UP_TO_DATE);
 	}
 }

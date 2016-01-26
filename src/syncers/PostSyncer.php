@@ -15,10 +15,45 @@ class PostSyncer extends AResourceSyncer {
 	}
 
 	/**
+	 * Get local id by slug.
+	 */
+	private function getIdBySlug($slug) {
+		global $wpdb;
+
+		$q=$wpdb->prepare("SELECT ID FROM {$wpdb->prefix}posts WHERE post_name=%s",$slug);
+		$id=$wpdb->get_var($q);
+
+		if ($wpdb->last_error)
+			throw new Exception($wpdb->last_error);
+
+		/*if (!$id)
+			throw new Exception("no post for: ".$slug);*/
+
+		return $id;
+	}
+
+	/**
+	 * Get local id by slug.
+	 */
+	private function getSlugById($postId) {
+		$post=get_post($postId);
+		if (!$post)
+			return NULL;
+
+		return $post->post_name;
+	}
+
+	/**
 	 * Get post path.
 	 */
 	private function getPostPath($postId) {
+		if (!$postId)
+			throw new Exception("getPostPath: no post id");
+
 		$post=get_post($postId);
+
+		if (!$post)
+			throw new Exception("post not found: id=".$postId);
 
 		if (!$post->post_parent)
 			return $postId;
@@ -29,15 +64,22 @@ class PostSyncer extends AResourceSyncer {
 	/**
 	 * Get weight.
 	 */
-	public function getResourceWeight($localId) {
-		return $this->getPostPath($localId);
+	public function getResourceWeight($slug) {
+		$localId=$this->getIdBySlug($slug);
+		if (!$localId)
+			throw new Exception("can't find resource, slug=".$slug);
+		$path=$this->getPostPath($localId);
+
+		//echo "get res weight: $slug -- $path -- $localId\n";
+
+		return $path;
 	}
 
 	/**
 	 * List current local resources.
 	 */
-	public function listResourceIds() {
-		$ids=array();
+	public function listResourceSlugs() {
+		$slugs=array();
 
 		$q=new WP_Query(array(
 			"post_type"=>"any",
@@ -48,17 +90,21 @@ class PostSyncer extends AResourceSyncer {
 
 		foreach ($posts as $post) {
 			if ($post->post_type=="page" || $post->post_type=="post")
-				$ids[]=$post->ID;
+				$slugs[]=$post->post_name;
 		}
 
-		return $ids;
+		return $slugs;
 	}
 
 	/**
 	 * Get post by local id.
 	 */
-	public function getResource($localId) {
+	public function getResource($slug) {
+		$localId=$this->getIdBySlug($slug);
 		$post=get_post($localId);
+
+		if (!$post)
+			return NULL;
 
 		if ($post->post_status=="trash")
 			return NULL;
@@ -70,7 +116,7 @@ class PostSyncer extends AResourceSyncer {
 			"post_content"=>$post->post_content,
 			"post_excerpt"=>$post->post_excerpt,
 			"post_status"=>$post->post_status,
-			"post_parent"=>$this->localToGlobal($post->post_parent),
+			"post_parent"=>$this->getSlugById($post->post_parent),
 			"menu_order"=>$post->menu_order,
 		);
 	}
@@ -78,7 +124,11 @@ class PostSyncer extends AResourceSyncer {
 	/**
 	 * Update a local resource with data.
 	 */
-	function updateResource($localId, $data) {
+	function updateResource($slug, $data) {
+		if ($data["post_name"]!=$slug)
+			throw new Exception("Sanity check failed, slug!=name");
+
+		$localId=$this->getIdBySlug($slug);
 		$post=get_post($localId);
 
 		$post->post_name=$data["post_name"];
@@ -87,7 +137,7 @@ class PostSyncer extends AResourceSyncer {
 		$post->post_content=$data["post_content"];
 		$post->post_excerpt=$data["post_excerpt"];
 		$post->post_status=$data["post_status"];
-		$post->post_parent=$this->globalToLocal($data["post_parent"]);
+		$post->post_parent=$this->getIdBySlug($data["post_parent"]);
 		$post->menu_order=$data["menu_order"];
 
 		wp_update_post($post);
@@ -96,15 +146,18 @@ class PostSyncer extends AResourceSyncer {
 	/**
 	 * Create a local resource.
 	 */
-	function createResource($data) {
+	function createResource($slug, $data) {
+		if ($data["post_name"]!=$slug)
+			throw new Exception("Sanity check failed, slug!=name");
+
 		return wp_insert_post(array(
-			"post_name"=>$data["post_name"],
+			"post_name"=>$slug,
 			"post_title"=>$data["post_title"],
 			"post_type"=>$data["post_type"],
 			"post_content"=>$data["post_content"],
 			"post_excerpt"=>$data["post_excerpt"],
 			"post_status"=>$data["post_status"],
-			"post_parent"=>$this->globalToLocal($data["post_parent"]),
+			"post_parent"=>$this->getIdBySlug($data["post_parent"]),
 			"menu_order"=>$data["menu_order"]
 		));
 	}
@@ -112,34 +165,8 @@ class PostSyncer extends AResourceSyncer {
 	/**
 	 * Delete a local resource.
 	 */
-	function deleteResource($localId) {
+	function deleteResource($slug) {
+		$localId=$this->getIdBySlug($slug);
 		wp_trash_post($localId);
-	}
-
-	/**
-	 * Merge resource data.
-	 */
-	function mergeResourceData($base, $local, $remote) {
-		/*print_r($base);
-		print_r($local);
-		print_r($remote);*/
-
-		return array(
-			"post_name"=>$this->mergeKeyValue("post_name",$base,$local,$remote),
-			"post_title"=>$this->mergeKeyValue("post_title",$base,$local,$remote),
-			"post_type"=>$this->pickKeyValue("post_type",$base,$local,$remote),
-			"post_content"=>$this->mergeKeyValue("post_content",$base,$local,$remote),
-			"post_excerpt"=>$this->mergeKeyValue("post_excerpt",$base,$local,$remote),
-			"post_status"=>$this->pickKeyValue("post_status",$base,$local,$remote),
-			"post_parent"=>$this->pickKeyValue("post_parent",$base,$local,$remote),
-			"menu_order"=>$this->pickKeyValue("menu_order",$base,$local,$remote)
-		);
-	}
-
-	/**
-	 * Get sync label from data.
-	 */
-	function getResourceLabel($data) {
-		return $data["post_title"];
 	}
 }

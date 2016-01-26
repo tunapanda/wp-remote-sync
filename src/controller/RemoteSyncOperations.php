@@ -66,10 +66,10 @@ class RemoteSyncOperations {
 		foreach ($syncers as $syncer) {
 			$this->job->log("Status: ".$syncer->getType());
 
-			$syncer->updateSyncResources();
-
-			$syncResources=$syncer->getSyncResourcesByGlobalId();
-			$remoteResources=$syncer->getRemoteResourcesByGlobalId();
+			$syncResources=SyncResource::findAllForType(
+				$syncer->getType(),
+				SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE
+			);
 
 			$newLocal=0;
 			$newRemote=0;
@@ -80,37 +80,38 @@ class RemoteSyncOperations {
 			$needsMerge=0;
 
 			foreach ($syncResources as $syncResource) {
-				/*print_r($syncResource->getData()); echo "<br>";
-				print_r($syncResource->getBaseData()); echo "<br>";
-				echo "rev: ".$syncResource->getRevision();
-				echo "base: ".$syncResource->getBaseRevision();*/
+				switch ($syncResource->getState()) {
+					case SyncResource::NEW_LOCAL:
+						$newLocal++;
+						break;
 
-				if (!$syncResource->getBaseRevision())
-					$newLocal++;
+					case SyncResource::NEW_REMOTE:
+						$newRemote++;
+						break;
 
-				else if ($syncResource->isDeleted())
-					$deletedLocal++;
+					case SyncResource::DELETED_LOCAL:
+						$deletedLocal++;
+						break;
 
-				else if (!$remoteResources[$syncResource->globalId])
-					$deletedRemote++;
+					case SyncResource::DELETED_REMOTE:
+						$deletedRemote++;
+						break;
 
-				else if ($syncResource->getRevision()!=$syncResource->getBaseRevision())
-					$updatedLocal++;
-			}
+					case SyncResource::UPDATED_LOCAL:
+						$updatedLocal++;
+						break;
 
-			foreach ($remoteResources as $remoteResource) {
-				$syncResource=NULL;
-				if (isset($syncResources[$remoteResource->globalId]))
-					$syncResource=$syncResources[$remoteResource->globalId];
+					case SyncResource::UPDATED_REMOTE:
+						$updatedRemote++;
+						break;
 
-				if (!$syncResource)
-					$newRemote++;
-
-				else if ($remoteResource->getRevision()!=$syncResource->getBaseRevision()) {
-					$updatedRemote++;
-
-					if ($syncResource->getRevision()!=$syncResource->getBaseRevision())
+					case SyncResource::CONFLICT:
 						$needsMerge++;
+						break;
+
+					case SyncResource::GARBAGE:
+					case SyncResource::UP_TO_DATE:
+						break;
 				}
 			}
 
@@ -133,7 +134,7 @@ class RemoteSyncOperations {
 				$this->job->log("  Updated remote items:   ".$updatedRemote);
 
 			if ($needsMerge)
-				$this->job->log("  Needs merge:            ".$needsMerge);
+				$this->job->log("  Conflicting:            ".$needsMerge);
 		}
 	}
 
@@ -146,142 +147,59 @@ class RemoteSyncOperations {
 		foreach ($syncers as $syncer) {
 			$this->job->log("Pull: ".$syncer->getType());
 
-			$syncer->updateSyncResources();
-			$remoteResources=$syncer->getRemoteResourcesByGlobalId();
-			foreach ($remoteResources as $remoteResource) {
-				$localResource=SyncResource::findOneBy("globalId",$remoteResource->globalId);
+			$syncResources=SyncResource::findAllForType(
+				$syncer->getType(),
+				SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE
+			);
 
-				// Skip if it is locally deleted.
-				if ($localResource && $localResource->isDeleted()) {
-					//echo "it is locally deleted!";
-				}
+			foreach ($syncResources as $syncResource) {
+				switch ($syncResource->getState()) {
+					case SyncResource::NEW_REMOTE:
+						$syncResource->createLocalResource();
+						//$syncResource->downloadAttachments();
+						$syncResource->save();
+						$this->job->log("  ".$syncResource->getSlug().": Created local.");
+						break;
 
-				// Exists locally
-				else if ($localResource) {
-					$localId=$localResource->localId;
+					case SyncResource::UPDATED_REMOTE:
+						$syncResource->updateLocalResource();
+						$syncResource->save();
+						$this->job->log("  ".$syncResource->getSlug().": Updated local.");
+						break;
 
-					if (!$localResource->getBaseRevision()) {
-						$this->job->log("local base revision missing, localId=".$localResource->id);
-						$this->job->log($localResource->getBaseData());
-						throw new Exception("local base revision missing (!?!?!?!)");
-					}
+					case SyncResource::DELETED_REMOTE:
+						$syncResource->deleteLocalResource();
+						$syncResource->delete();
+						$this->job->log("  ".$syncResource->getSlug().": Deleted local.");
+						break;
 
-					// Remotely changed
-					if ($localResource->getBaseRevision()!=$remoteResource->getRevision()) {
-						$label=$remoteResource->getLabel();
+					case SyncResource::GARBAGE:
+						$syncResource->delete();
+						break;
 
-						// Merge?
-						if ($localResource->isLocallyModified()) {
-							$this->job->log("modified... rev: ".$localResource->getRevision()." base: ".$localResource->getBaseRevision());
-							$merged=$syncer->mergeResourceData(
-								$localResource->getBaseData(),
-								$localResource->getData(),
-								$remoteResource->getData()
-							);
+					case SyncResource::CONFLICT:
+						switch (get_option("rs_merge_strategy")) {
+							case "prioritize_local":
+								$syncResource->baseRevision=$syncResource->getRemoteRevision();
+								$syncResource->save();
+								$this->job->log("  ".$syncResource->getSlug().": Conflict, using local.");
+								break;
 
-							$syncer->updateResource($localId,$merged);
-							$mergedRevision=$syncer->getResourceRevision($merged);
+							case "prioritize_remote":
+								$syncResource->updateLocalResource();
+								$syncResource->save();
+								$this->job->log("  ".$syncResource->getSlug().": Conflict, using remote.");
+								break;
 
-							$savedData=$syncer->getResource($localId);
-							$savedRevision=$syncer->getResourceRevision($savedData);
-
-							if ($savedRevision!=$mergedRevision) {
-								$this->job->log("comparing");
-								$this->job->log("eq: ".($merged==$savedData));
-								$this->job->log("eq: ".($merged===$savedData));
-								$this->job->log("json eq: ".(json_encode($merged,JSON_PRETTY_PRINT)==json_encode($savedData,JSON_PRETTY_PRINT)));
-
-								$this->job->log("Problem with syncer, the saved and merged versions differ!");
-								$this->job->log("**** merged data ****");
-								$this->job->log(json_encode($merged,JSON_PRETTY_PRINT));
-								$this->job->log("**** saved data ****");
-								$this->job->log(json_encode($savedData,JSON_PRETTY_PRINT));
-								$this->job->log("saved: ".$savedRevision." merged: ".$mergedRevision);
-								throw new Exception("The saved version is not the one we saved");
-							}
-
-							$localResource->setJob($this->job);
-							$localResource->downloadAttachments($remoteResource);
-							$localResource->setBaseData($remoteResource->getData());
-							$localResource->save();
-							$this->job->log("* M {$remoteResource->globalId} $localId $label");
-
-							$localRev=$localResource->getRevision();
-							$remoteRev=$remoteResource->getRevision();
-							$baseRev=$localResource->getBaseRevision();
+							default:
+								$this->job->log("  ".$syncResource->getSlug().": Conflict, skipping.");
+								break;
 						}
+						break;
 
-						else {
-							$syncer->updateResource($localId,$remoteResource->getData());
-							$localResource->setJob($this->job);
-							$localResource->downloadAttachments($remoteResource);
-							$localResource->setBaseData($remoteResource->getData());
-							$localResource->save();
-							$this->job->log("* U {$remoteResource->globalId} $localId $label");
-						}
-					}
-				}
-
-				// Doesn't exist locally.
-				else {
-					$localId=$syncer->createResource($remoteResource->getData());
-
-					$localResource=new SyncResource($syncer->getType());
-					$localResource->localId=$localId;
-					$localResource->globalId=$remoteResource->globalId;
-					$localResource->setBaseData($remoteResource->getData());
-					$localResource->save();
-
-					try {
-						$localResource->setJob($this->job);
-						$localResource->downloadAttachments($remoteResource);
-					}
-
-					catch (Exception $e) {
-						$syncer->deleteResource($localId);
-						$localResource->delete();
-						throw $e;
-					}
-
-					$label=$remoteResource->getLabel();
-
-					$this->job->log("* A {$remoteResource->globalId} $localId $label");
-
-					$localRev=$localResource->getRevision();
-					$baseRev=$localResource->getBaseRevision();
-					$remoteRev=$remoteResource->getRevision();
-
-					if ($localRev!=$baseRev || $baseRev!=$remoteRev) {
-						$this->job->log(
-							"revisions differ: l=".$localResource->getRevision().
-							" b=".$localResource->getBaseRevision().
-							" r=".$remoteResource->getRevision()
-						);
-
-						$this->job->log("**** local resource ****");
-						$this->job->log(nl2br(htmlspecialchars(json_encode($localResource->getData(),JSON_PRETTY_PRINT))));
-
-						$this->job->log("**** base resource ****");
-						$this->job->log(nl2br(htmlspecialchars(json_encode($localResource->getBaseData(),JSON_PRETTY_PRINT))));
-
-						$syncer->deleteResource($localId);
-						$localResource->delete();
-
-						throw new Exception("versions differ after add, this is unexpected");
-					}
-				}
-			}
-
-			$localResources=$syncer->getSyncResources();
-			foreach ($localResources as $localResource) {
-				$globalId=$localResource->globalId;
-				if ($localResource->getBaseRevision() && !$remoteResources[$globalId]) {
-					$label=$localResource->getLabel();
-
-					$syncer->deleteResource($localResource->localId);
-					$localResource->delete();
-
-					$this->job->log("* D {$localResource->globalId} {$localResource->localId} $label");
+					case SyncResource::UP_TO_DATE:
+						$syncResource->save();
+						break;
 				}
 			}
 		}
@@ -296,57 +214,49 @@ class RemoteSyncOperations {
 		foreach ($syncers as $syncer) {
 			$this->job->log("Push: ".$syncer->getType());
 
-			$syncer->updateSyncResources();
-			$syncResources=$syncer->getSyncResources();
+			$syncResources=SyncResource::findAllForType(
+				$syncer->getType(),
+				SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE
+			);
+
 			foreach ($syncResources as $syncResource) {
-				if ($syncResource->isDeleted()) {
-					if ($syncResource->getBaseRevision()) {
-						RemoteSyncPlugin::instance()->remoteCall("del",array(
-							"globalId"=>$syncResource->globalId
-						));
-					}
+				switch ($syncResource->getState()) {
+					case SyncResource::NEW_REMOTE:
+					case SyncResource::UPDATED_REMOTE:
+					case SyncResource::DELETED_REMOTE:
+						$this->job($syncResource->getSlug.": Remotely changed, please pull.");
+						break;
 
-					$syncResource->delete();
-					$this->job->log("* D {$syncResource->globalId} {$syncResource->localId}");
-				}
+					case SyncResource::NEW_LOCAL:
+						$syncResource->createRemoteResource();
+						$syncResource->save();
+						$this->job->log("  ".$syncResource->getSlug().": Created remote.");
+						break;
 
-				else if ($syncResource->isNew()) {
-					$data=$syncResource->getData();
-					$label=$syncer->getResourceLabel($data);
+					case SyncResource::UPDATED_LOCAL:
+						$syncResource->updateRemoteResource();
+						$syncResource->save();
+						$this->job->log("  ".$syncResource->getSlug().": Updated remote.");
+						break;
 
-					if (!$syncResource->getRevision())
-						throw new Exception("Local data doesn't have a revision!");
+					case SyncResource::DELETED_LOCAL:
+						$syncResource->deleteRemoteResource();
+						$syncResource->delete();
+						$this->job->log("  ".$syncResource->getSlug().": Deleted remote.");
+						break;
 
-					RemoteSyncPlugin::instance()->setCallMessage("Uploading '$label'...");
-					RemoteSyncPlugin::instance()->remoteCall("add",array(
-							"globalId"=>$syncResource->globalId,
-							"data"=>json_encode($data),
-							"type"=>$syncResource->type
-						),
-						$syncResource->getAttachmentEntries());
+					case SyncResource::CONFLICT:
+						$this->job->log("  ".$syncResource->getSlug().": Conflict, skipping.");
+						break;
 
-					$syncResource->setBaseData($syncResource->getData());
-					$syncResource->save();
+					case SyncResource::UP_TO_DATE:
+						$syncResource->save();
+						break;
 
-					$this->job->log("* A {$syncResource->globalId} {$syncResource->localId} $label");
-				}
-
-				else if ($syncResource->isLocallyModified()) {
-					$data=$syncResource->getData();
-					$label=$syncer->getResourceLabel($data);
-
-					RemoteSyncPlugin::instance()->setCallMessage("Uploading '$label'...");
-					RemoteSyncPlugin::instance()->remoteCall("put",array(
-							"globalId"=>$syncResource->globalId,
-							"baseRevision"=>$syncResource->getBaseRevision(),
-							"data"=>json_encode($data)
-						),
-						$syncResource->getAttachmentEntries());
-
-					$syncResource->setBaseData($syncResource->getData());
-					$syncResource->save();
-
-					$this->job->log("* U {$syncResource->globalId} {$syncResource->localId} $label");
+					case SyncResource::GARBAGE:
+						//echo "garbage!!!\n";
+						$syncResource->delete();
+						break;
 				}
 			}
 		}

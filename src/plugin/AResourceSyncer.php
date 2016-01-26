@@ -33,79 +33,46 @@ abstract class AResourceSyncer {
 	}
 
 	/**
-	 * Update local revisions.
-	 */
-	public final function updateSyncResources() {
-		$localIds=$this->listResourceIds();
-		$syncResources=$this->getSyncResourcesByLocalId();
-
-		foreach ($localIds as $localId) {
-			if (!isset($syncResources[$localId])) {
-				$syncResource=new SyncResource($this->type);
-				$syncResource->globalId=uniqid();
-				$syncResource->localId=$localId;
-				$syncResource->save();
-			}
-		}
-
-		foreach ($syncResources as $syncResource) {
-			if (!$syncResource->getRevision() &&
-					!$syncResource->getBaseRevision())
-				$syncResource->delete();
-		}
-	}
-
-	/**
 	 * List current local resources of this resource type.
 	 */
-	abstract function listResourceIds();
+	abstract function listResourceSlugs();
 
 	/**
 	 * Fetch a local resource.
 	 * Should return an array with data.
 	 */
-	abstract function getResource($localId);
+	abstract function getResource($slug);
 
 	/**
 	 * Update a local resource with data.
 	 */
-	abstract function updateResource($localId, $data);
+	abstract function updateResource($slug, $data);
 
 	/**
-	 * Create a local resource.
+	 * Overrid this is create needs to be different
+	 * from update.
 	 */
-	abstract function createResource($data);
+	function createResource($slug, $data) {
+		$this->updateResource($slug,$data);
+	}
 
 	/**
 	 * Delete a local resource.
 	 */
-	abstract function deleteResource($localId);
-
-	/**
-	 * Merge resource data.
-	 */
-	abstract function mergeResourceData($base, $local, $remote);
-
-	/**
-	 * Get label to show when syncing.
-	 */
-	abstract function getResourceLabel($data);
-
-	/**
-	 * Get local resource revision.
-	 */
-	function getResourceRevision($data) {
-		if (!$data)
-			return NULL;
-
-		return md5(json_encode($data));
-	}
+	abstract function deleteResource($slug);
 
 	/**
 	 * Override this to support attached files.
 	 */
-	function getResourceAttachments($localId) {
+	function getResourceAttachments($slug) {
 		return array();
+	}
+
+	/**
+	 * Get local folder where attachments for this resource should be saved.
+	 */
+	function getAttachmentDirectory($slug) {
+		return wp_upload_dir()["basedir"];
 	}
 
 	/**
@@ -113,197 +80,14 @@ abstract class AResourceSyncer {
 	 * order in which the resources will be listed.
 	 * Useful in order to support hierarchial relationships.
 	 */
-	function getResourceWeight($localId) {
+	function getResourceWeight($slug) {
 		return "";
 	}
 
 	/**
-	 * Convert local id to global id.
+	 * Run install.
 	 */
-	public function localToGlobal($localId) {
-		$r=SyncResource::findOneBy(array(
-			"type"=>$this->type,
-			"localId"=>$localId
-		));
-
-		if (!$r)
-			return NULL;
-
-		return $r->globalId;
-	}
-
-	/**
-	 * Convert global id to local id.
-	 */
-	public function globalToLocal($globalId) {
-		$r=SyncResource::findOneBy("globalId",$globalId);
-		if (!$r)
-			return NULL;
-
-		if ($r->type!=$this->type)
-			throw new Exception("Wrong type");
-
-		return $r->localId;
-	}
-
-	/**
-	 * Get sync resource by local id.
-	 */
-	public function getSyncResourceByLocalId($localId) {
-		return SyncResource::findOneBy(array(
-			"type"=>$this->type,
-			"localId"=>$localId
-		));
-	}
-
-	/**
-	 * Get related sync resources.
-	 */
-	public function getSyncResources() {
-		return SyncResource::findAllBy("type",$this->type);
-	}
-
-	/**
-	 * Get related sync resources, keyed on globalId.
-	 */
-	public function getSyncResourcesByGlobalId() {
-		$syncResources=$this->getSyncResources();
-		$res=[];
-
-		foreach ($syncResources as $syncResource)
-			$res[$syncResource->globalId]=$syncResource;
-
-		return $res;
-	}
-
-	/**
-	 * Get related sync resources, keyed on localId.
-	 */
-	public function getSyncResourcesByLocalId() {
-		$syncResources=$this->getSyncResources();
-		$res=[];
-
-		foreach ($syncResources as $syncResource)
-			$res[$syncResource->localId]=$syncResource;
-
-		return $res;
-	}
-
-	/**
-	 * Get remote resources.
-	 */
-	public function getRemoteResources() {
-		return RemoteSyncPlugin::instance()->getRemoteResources($this->type);
-	}
-
-	/**
-	 * Get remote resources, keyed on globalId.
-	 */
-	public function getRemoteResourcesByGlobalId() {
-		$remoteResources=$this->getRemoteResources();
-		$res=[];
-
-		foreach ($remoteResources as $remoteResource)
-			$res[$remoteResource->globalId]=$remoteResource;
-
-		return $res;
-	}
-
-	/**
-	 * Install.
-	 */
-	public function install() {
-		$this->updateSyncResources();
-	}
-
-	/**
-	 * Merge key values from objects.
-	 */
-	public final function mergeKeyValue($key, $base, $local, $remote) {
-		return $this->merge($base[$key],$local[$key],$remote[$key]);
-	}
-
-	/**
-	 * Pick a "merged" value depending on settings.
-	 */
-	public function pickKeyValue($key, $base, $local, $remote) {
-		return $this->pick($base[$key],$local[$key],$remote[$key]);
-	}
-
-	/**
-	 * Pick a value depending on changes and configuration.
-	 */
-	public static function pick($base, $local, $remote) {
-		if (get_option("rs_merge_strategy")=="prioritize_local" 
-				&& $local!=$base)
-			return $local;
-
-		if ($remote!=$base)
-			return $remote;
-
-		if ($local!=$base)
-			return $local;
-
-		return $base;
-	}
-
-	/**
-	 * Merge text according to priority settings.
-	 */
-	public final function merge($base, $local, $remote) {
-		$base=explode("\n",$base);
-		$local=explode("\n",$local);
-		$remote=explode("\n",$remote);
-
-		$diff=new DiffModule();
-		$mergeRecords=$diff->merge3($base,$local,$remote);
-		$res="";
-
-		foreach ($mergeRecords as $mergeRecord) {
-			switch ($mergeRecord[0]) {
-				case 'orig':
-				case 'addright':
-				case 'addleft':
-				case 'addboth':
-					$res.=$mergeRecord[1]."\n";
-					break;
-
-				case "delleft":
-				case "delright":
-				case "delboth":
-					break;
-
-				case "conflict":
-					if (get_option("rs_merge_strategy")=="prioritize_local")
-						$res.=$mergeRecord[1]."\n";
-
-					else
-						$res.=$mergeRecord[2]."\n";
-					break;
-
-				default:
-					print_r($mergeRecords);
-					throw new Exception("Strange merge conflict: ".$mergeRecord[0]);
-					break;
-			}
-		}
-
-		$res=substr($res,0,strlen($res)-1);
-
-		return $res;
-	}
-
-	/**
-	 * Merge objects.
-	 * COnvert them to yaml, then merge text and parse.
-	 */
-	public final function mergeObjects($base, $local, $remote) {
-		$baseYaml=spyc_dump($base);
-		$localYaml=spyc_dump($base);
-		$remoteYaml=spyc_dump($base);
-
-		$mergedYaml=$this->merge($baseYaml,$localYaml,$remoteYaml);
-
-		return spyc_load($mergedYaml);
+	function install() {
+		return;
 	}
 }

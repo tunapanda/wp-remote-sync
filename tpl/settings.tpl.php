@@ -27,21 +27,26 @@
                 </td>
             </tr>
             <tr valign="top">
-                <th scope="row">Merge strategy</th>
+                <th scope="row">Conflicts</th>
                 <td>
                     <select name="rs_merge_strategy">
+                        <option value="skip"
+                            <?php if (get_option("rs_merge_strategy")=="skip") { ?>
+                                selected
+                            <?php } ?>
+                        >Skip</option>
                         <option value="prioritize_remote"
                             <?php if (get_option("rs_merge_strategy")=="prioritize_remote") { ?>
                                 selected
                             <?php } ?>
-                        >Proiritize remote content</option>
+                        >Use remote content</option>
                         <option value="prioritize_local"
                             <?php if (get_option("rs_merge_strategy")=="prioritize_local") { ?>
                                 selected
                             <?php } ?>
-                        >Proiritize local content</option>
+                        >Use local content</option>
                     </select>
-                    <p class="description">In the rare event of merge conflicts, how should the merge be done?</p>
+                    <p class="description">In the event of conflicts, how should is be resolved?</p>
                 </td>
             </tr>
             

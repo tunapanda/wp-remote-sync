@@ -22,18 +22,32 @@ class H5pSyncer extends AResourceSyncer {
 	}
 
 	/**
-	 * List current local resources.
+	 * Get id by slug.
 	 */
-	public function listResourceIds() {
+	private function getIdBySlug($slug) {
 		global $wpdb;
 
-		$q=$wpdb->prepare("SELECT id FROM wp_h5p_contents",NULL);
-		$ids=$wpdb->get_col($q);
+		$q=$wpdb->prepare("SELECT id FROM {$wpdb->prefix}h5p_contents WHERE slug=%s",$slug);
+		$id=$wpdb->get_var($q);
 
 		if ($wpdb->last_error)
 			throw new Exception($wpdb->last_error);
 
-		return $ids;
+		return $id;
+	}
+
+	/**
+	 * List current local resources.
+	 */
+	public function listResourceSlugs() {
+		global $wpdb;
+
+		$slugs=$wpdb->get_col("SELECT slug FROM {$wpdb->prefix}h5p_contents");
+
+		if ($wpdb->last_error)
+			throw new Exception($wpdb->last_error);
+
+		return $slugs;
 	}
 
 	/**
@@ -69,7 +83,11 @@ class H5pSyncer extends AResourceSyncer {
 	/**
 	 * Get resource attachments.
 	 */
-	public function getResourceAttachments($localId) {
+	public function getResourceAttachments($slug) {
+		$localId=$this->getIdBySlug($slug);
+		if (!$localId)
+			throw new Exception("getResourceAttachments: H5P doesn't exist: ".$slug);
+
 		$uploadBasedir=wp_upload_dir()["basedir"];
 		$attachmentDir=$uploadBasedir."/h5p/content/$localId/";
 
@@ -87,12 +105,12 @@ class H5pSyncer extends AResourceSyncer {
 	/**
 	 * Find H5P library by id.
 	 */
-	public function findH5pLibraryById($id) {
+	private function findH5pLibraryById($id) {
 		global $wpdb;
 
 		$q=$wpdb->prepare(
 			"SELECT * ".
-			"FROM   wp_h5p_libraries ".
+			"FROM   {$wpdb->prefix}h5p_libraries ".
 			"WHERE  id=%s",
 			$id);
 
@@ -107,14 +125,14 @@ class H5pSyncer extends AResourceSyncer {
 	/**
 	 * Find dependencies for content.
 	 */
-	public function findH5pContentDependencies($h5pId) {
+	private function findH5pContentDependencies($h5pId) {
 		global $wpdb;
 
 		$q=$wpdb->prepare(
 			"SELECT    l.name, l.minor_version, l.major_version, l.patch_version, ".
 			"          cl.dependency_type, cl.weight, cl.drop_css ".
-			"FROM      wp_h5p_contents_libraries AS cl ".
-			"LEFT JOIN wp_h5p_libraries AS l ".
+			"FROM      {$wpdb->prefix}h5p_contents_libraries AS cl ".
+			"LEFT JOIN {$wpdb->prefix}h5p_libraries AS l ".
 			"ON        cl.library_id=l.id ".
 			"WHERE     cl.content_id=%s",
 			$h5pId);
@@ -130,12 +148,12 @@ class H5pSyncer extends AResourceSyncer {
 	/**
 	 * Find H5P library by name and version.
 	 */
-	public function findH5pLibraryByName($name, $major_version, $minor_version, $patch_version) {
+	private function findH5pLibraryByName($name, $major_version, $minor_version, $patch_version) {
 		global $wpdb;
 
 		$q=$wpdb->prepare(
 			"SELECT * ".
-			"FROM   wp_h5p_libraries ".
+			"FROM   {$wpdb->prefix}h5p_libraries ".
 			"WHERE  name=%s ".
 			"AND    major_version=%s ".
 			"AND    minor_version=%s ".
@@ -162,10 +180,11 @@ class H5pSyncer extends AResourceSyncer {
 	/**
 	 * Get post by local id.
 	 */
-	public function getResource($localId) {
+	public function getResource($slug) {
+		$localId=$this->getIdBySlug($slug);
 		global $wpdb;
 
-		$q=$wpdb->prepare("SELECT * FROM wp_h5p_contents WHERE id=%s",$localId);
+		$q=$wpdb->prepare("SELECT * FROM {$wpdb->prefix}h5p_contents WHERE id=%s",$localId);
 		$h5p=$wpdb->get_row($q,ARRAY_A);
 
 		if ($wpdb->last_error)
@@ -205,7 +224,7 @@ class H5pSyncer extends AResourceSyncer {
 	/**
 	 * Ensure that dependency record exists.
 	 */
-	function ensureDependency($h5pId, $dependency) {
+	private function ensureDependency($h5pId, $dependency) {
 		global $wpdb;
 
 		$library=$this->findH5pLibraryByName(
@@ -222,7 +241,7 @@ class H5pSyncer extends AResourceSyncer {
 
 		$q=$wpdb->prepare(
 			"SELECT * ".
-			"FROM   wp_h5p_contents_libraries ".
+			"FROM   {$wpdb->prefix}h5p_contents_libraries ".
 			"WHERE  content_id=%s ".
 			"AND    library_id=%s ".
 			"AND    dependency_type=%s",
@@ -237,7 +256,7 @@ class H5pSyncer extends AResourceSyncer {
 
 		if (!$row) {
 			$q=$wpdb->prepare(
-				"INSERT INTO  wp_h5p_contents_libraries ".
+				"INSERT INTO  {$wpdb->prefix}h5p_contents_libraries ".
 				"SET          content_id=%s, library_id=%s, ".
 				"             dependency_type=%s, weight=%s, drop_css=%s ",
 				$h5pId,$libraryId,
@@ -253,7 +272,7 @@ class H5pSyncer extends AResourceSyncer {
 
 		else {
 			$q=$wpdb->prepare(
-				"UPDATE  wp_h5p_contents_libraries ".
+				"UPDATE  {$wpdb->prefix}h5p_contents_libraries ".
 				"SET     weight=%s, drop_css=%s ".
 				"WHERE   content_id=%s ".
 				"AND     library_id=%s ".
@@ -272,7 +291,8 @@ class H5pSyncer extends AResourceSyncer {
 	/**
 	 * Update a local resource with data.
 	 */
-	function updateResource($localId, $data) {
+	public function updateResource($slug, $data) {
+		$localId=$this->getIdBySlug($slug);
 		global $wpdb;
 
 		$library=$data["library"];
@@ -290,7 +310,7 @@ class H5pSyncer extends AResourceSyncer {
 				"not found on this server.");
 
 		$q=$wpdb->prepare(
-			"UPDATE  wp_h5p_contents ".
+			"UPDATE  {$wpdb->prefix}h5p_contents ".
 			"SET     title=%s, parameters=%s, filtered=%s, slug=%s, ".
 			"        embed_type=%s, disable=%s, content_type=%s, license=%s, ".
 			"        keywords=%s, description=%s, library_id=%s ".
@@ -315,8 +335,11 @@ class H5pSyncer extends AResourceSyncer {
 	/**
 	 * Create a local resource.
 	 */
-	function createResource($data) {
+	function createResource($slug, $data) {
 		global $wpdb;
+
+		if (!$slug || $data["slug"]!=$slug)
+			throw new Exception("sanity test failed, slug!=slug");
 
 		$library=$data["library"];
 		$h5pLibrary=$this->findH5pLibraryByName(
@@ -333,7 +356,7 @@ class H5pSyncer extends AResourceSyncer {
 				"not found on this server.");
 
 		$q=$wpdb->prepare(
-			"INSERT INTO  wp_h5p_contents ".
+			"INSERT INTO  {$wpdb->prefix}h5p_contents ".
 			"SET          title=%s, parameters=%s, filtered=%s, slug=%s, ".
 			"             embed_type=%s, disable=%s, content_type=%s, license=%s, ".
 			"             keywords=%s, description=%s, library_id=%s",
@@ -355,11 +378,11 @@ class H5pSyncer extends AResourceSyncer {
 		}
 
 		catch (Exception $e) {
-			$this->deleteResource($localId);
+			$this->deleteResource($slug);
 			throw $e;
 		}
 
-		$saved=$this->getResource($localId);
+		$saved=$this->getResource($slug);
 		if ($saved!==$data) {
 			echo "in local db=".sizeof($saved["libraries"])." incoming=".sizeof($data["libraries"])."<br>";
 
@@ -373,11 +396,12 @@ class H5pSyncer extends AResourceSyncer {
 	/**
 	 * Delete a local resource.
 	 */
-	function deleteResource($localId) {
+	function deleteResource($slug) {
+		$slug=$this->getIdBySlug($slug);
 		global $wpdb;
 
 		$q=$wpdb->prepare(
-			"DELETE FROM  wp_h5p_contents ".
+			"DELETE FROM  {$wpdb->prefix}h5p_contents ".
 			"WHERE        id=%s",
 			$localId
 		);
@@ -387,7 +411,7 @@ class H5pSyncer extends AResourceSyncer {
 			throw new Exception($wpdb->last_error);
 
 		$q=$wpdb->prepare(
-			"DELETE FROM  wp_h5p_contents_libraries ".
+			"DELETE FROM  {$wpdb->prefix}h5p_contents_libraries ".
 			"WHERE        content_id=%s",
 			$localId
 		);
@@ -398,49 +422,14 @@ class H5pSyncer extends AResourceSyncer {
 	}
 
 	/**
-	 * Merge resource data.
+	 * Get directory for storing attachments.
 	 */
-	function mergeResourceData($base, $local, $remote) {
-		$data=array(
-			"title"=>$this->pickKeyValue("title",$base,$local,$remote),
-			"parameters"=>$this->pickKeyValue("parameters",$base,$local,$remote),
-			"filtered"=>$this->pickKeyValue("filtered",$base,$local,$remote),
-			"slug"=>$this->pickKeyValue("slug",$base,$local,$remote),
-			"embed_type"=>$this->pickKeyValue("embed_type",$base,$local,$remote),
-			"disable"=>$this->pickKeyValue("disable",$base,$local,$remote),
-			"content_type"=>$this->pickKeyValue("content_type",$base,$local,$remote),
-			"keywords"=>$this->pickKeyValue("keywords",$base,$local,$remote),
-			"description"=>$this->pickKeyValue("description",$base,$local,$remote),
-			"license"=>$this->pickKeyValue("license",$base,$local,$remote),
-			"library"=>$this->pickKeyValue("library",$base,$local,$remote),
-			"libraries"=>$this->pickKeyValue("libraries",$base,$local,$remote)
-		);
+	public function getAttachmentDirectory($slug) {
+		$localId=$this->getIdBySlug($slug);
 
-		$data["content_type"]=$data["content_type"]?$data["content_type"]:"";
-		$data["keywords"]=$data["keywords"]?$data["keywords"]:"";
-		$data["description"]=$data["description"]?$data["description"]:"";
-		$data["license"]=$data["license"]?$data["license"]:"";
+		if (!$localId)
+			throw new Exception("H5P not found for attachments dir: $slug");
 
-		// experimental merging of the actual content data, doesn't work atm...
-/*		$data["parameters"]=json_encode($this->mergeObjects(
-			json_decode($base["parameters"]),
-			json_decode($local["parameters"]),
-			json_decode($remote["parameters"])
-		));
-
-		$data["filtered"]=json_encode($this->mergeObjects(
-			json_decode($base["filtered"]),
-			json_decode($local["filtered"]),
-			json_decode($remote["filtered"])
-		));*/
-
-		return $data;
-	}
-
-	/**
-	 * Get sync label from data.
-	 */
-	function getResourceLabel($data) {
-		return $data["title"];
+		return wp_upload_dir()["basedir"]."/h5p/content/".$localId."/";
 	}
 }

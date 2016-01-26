@@ -15,7 +15,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 		$id=wp_insert_post(array(
 			"post_title"=>"hello",
 			"post_type"=>"post",
-			"post_content"=>"something"
+			"post_content"=>"something",
+			"post_name"=>"hello-slug"
 		));
 
 		$res=$api->ls(array("type"=>"post"));
@@ -35,16 +36,153 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 		$id=wp_insert_post(array(
 			"post_title"=>"hello",
 			"post_type"=>"post",
-			"post_content"=>"something"
+			"post_content"=>"something",
+			"post_name"=>"hello-slug"
 		));
 
 		$res=$api->ls(array("type"=>"post"));
 		$this->assertCount(1,$res);
 
-		$globalId=$res[0]["globalId"];
-		$resource=$api->get(array("globalId"=>$globalId));
+		$slug=$res[0]["slug"];
+		$this->assertEquals("hello-slug",$slug);
+
+		$resource=$api->get(array("type"=>"post","slug"=>$slug));
 
 		$this->assertEquals("something",$resource["data"]["post_content"]);
+	}
+
+	function test_add() {
+		RemoteSyncPlugin::instance()->install();
+		$api=RemoteSyncPlugin::instance()->getApi();
+
+		$data=array(
+			"post_name"=>"some-slug",
+			"post_type"=>"page",
+			"post_content"=>"hello",
+			"post_title"=>"title",
+			"post_excerpt"=>"ex",
+			"post_status"=>"published",
+			"post_parent"=>NULL,
+			"menu_order"=>0
+		);
+
+		$api->add(array(
+			"slug"=>"some-slug",
+			"type"=>"post",
+			"data"=>json_encode($data)
+		));
+
+		$q=new WP_Query(array(
+			"post_type"=>"any",
+			"post_status"=>"any",
+			"post_name"=>"some-slug"
+		));
+
+		$posts=$q->get_posts();
+		$this->assertEquals(1,sizeof($posts));
+
+		try {
+			$api->add(array(
+				"slug"=>"some-slug",
+				"type"=>"post",
+				"data"=>json_encode($data)
+			));
+		}
+
+		catch (Exception $e) {
+			$exceptionMessage=$e->getMessage();
+		}
+
+		$this->assertEquals($exceptionMessage,"Already exists!");
+	}
+
+	function test_put() {
+		RemoteSyncPlugin::instance()->install();
+		$api=RemoteSyncPlugin::instance()->getApi();
+
+		$data=array(
+			"post_name"=>"some-slug",
+			"post_type"=>"page",
+			"post_content"=>"hello",
+			"post_title"=>"title",
+			"post_excerpt"=>"ex",
+			"post_status"=>"published",
+			"post_parent"=>NULL,
+			"menu_order"=>0
+		);
+
+		try {
+			$api->put(array(
+				"baseRevision"=>"123",
+				"slug"=>"some-slug",
+				"type"=>"post",
+				"data"=>json_encode($data)
+			));
+		}
+
+		catch (Exception $e) {
+			$exceptionMessage=$e->getMessage();
+		}
+
+		$this->assertEquals($exceptionMessage,"Doesn't exist locally");
+
+		$data=array(
+			"post_name"=>"some-slug",
+			"post_type"=>"page",
+			"post_content"=>"hello",
+			"post_title"=>"title",
+			"post_excerpt"=>"ex",
+			"post_status"=>"published",
+			"post_parent"=>NULL,
+			"menu_order"=>0
+		);
+
+		$api->add(array(
+			"slug"=>"some-slug",
+			"type"=>"post",
+			"data"=>json_encode($data)
+		));
+
+		$resData=$api->get(array(
+			"type"=>"post",
+			"slug"=>"some-slug"
+		));
+
+		$this->assertEquals("15e97601f967ac0b60bac747657ec57c",$resData["revision"]);
+
+		$data["post_content"]="some new content";
+
+		try {
+			$api->put(array(
+				"slug"=>"some-slug",
+				"type"=>"post",
+				"baseRevision"=>"wrong",
+				"data"=>json_encode($data)
+			));
+		}
+
+		catch (Exception $e) {
+			$exceptionMessage=$e->getMessage();
+		}
+
+		$this->assertEquals($exceptionMessage,"Wrong base revision, please pull.");
+
+		$api->put(array(
+			"slug"=>"some-slug",
+			"type"=>"post",
+			"baseRevision"=>"15e97601f967ac0b60bac747657ec57c",
+			"data"=>json_encode($data)
+		));
+
+		$q=new WP_Query(array(
+			"post_type"=>"any",
+			"post_status"=>"any",
+			"post_name"=>"some-slug"
+		));
+
+		$posts=$q->get_posts();
+		$this->assertEquals(1,sizeof($posts));
+		$this->assertEquals($posts[0]->post_content,"some new content");
 	}
 
 	function test_get_attachment() {
@@ -55,22 +193,23 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 		$id=wp_insert_post(array(
 			"post_title"=>"hello",
 			"post_type"=>"attachment",
-			"post_content"=>"something"
+			"post_content"=>"something",
+			"post_name"=>"test-attachment"
 		));
 
 		update_post_meta($id,"_wp_attached_file","helloworld");
 
 		$syncer=RemoteSyncPlugin::instance()->getSyncerByType("attachment");
-		$attachments=$syncer->getResourceAttachments($id);
+		$attachments=$syncer->getResourceAttachments("test-attachment");
 		$this->assertEquals($attachments,array(
 			"helloworld"
 		));
 
 		$res=$api->ls(array("type"=>"attachment"));
 		$this->assertCount(1,$res);
+		$this->assertEquals($res[0]["slug"],"test-attachment");
 
-		$globalId=$res[0]["globalId"];
-		$resource=$api->get(array("globalId"=>$globalId));
+		$resource=$api->get(array("slug"=>"test-attachment","type"=>"attachment"));
 
 		$this->assertEquals($resource["attachments"],array(
 			"helloworld"
@@ -82,7 +221,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 		$id=wp_insert_post(array(
 			"post_title"=>"hello",
 			"post_type"=>"post",
-			"post_content"=>"something"
+			"post_content"=>"something",
+			"post_name"=>"the-name"
 		));
 
 		update_option('rs_access_key', "test");
@@ -92,25 +232,25 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 		$ls_res1 = array();
 		$args = array("key"=>"test", "type"=>"post");
 		$ls_res1 = $api->doApiCall("ls", $args);
-		print_r($ls_res1);
+		//print_r($ls_res1);
 
 		//test listing with the wrong key
 		$ls_res2 = array();
 		$args = array("key"=>"Wrong Key", "type"=>"post");
 		$ls_res2 = $api->doApiCall("ls", $args);
-		print_r($ls_res2);
+		//print_r($ls_res2);
 		
 		// test deleting with wrong key
 		$del_res1 = array();
-		$args = array("key"=>"wrong key", "type"=>"post", "globalId"=>$ls_res1[0]["globalId"]);
+		$args = array("key"=>"wrong key", "type"=>"post", "slug"=>$ls_res1[0]["slug"]);
 		$del_res1 = $api->doApiCall("del", $args);
-		print_r($del_res1);
+		//print_r($del_res1);
 
 		// test deleting with right key
 		$del_res1 = array();
-		$args = array("key"=>"test", "type"=>"post", "globalId"=>$ls_res1[0]["globalId"]);
+		$args = array("key"=>"test", "type"=>"post", "slug"=>$ls_res1[0]["slug"]);
 		$del_res1 = $api->doApiCall("del", $args);
-		print_r($del_res1);
+		//print_r($del_res1);
 	}
 }
 

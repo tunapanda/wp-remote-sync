@@ -1,27 +1,43 @@
 <?php
 
 require_once __DIR__."/../../ext/smartrecord/SmartRecord.php";
-
+require_once __DIR__."/RemoteResource.php";
 /**
  * Manage one synced resouce.
  */
 class SyncResource extends SmartRecord {
 
+	const POPULATE_LOCAL=1;
+	const POPULATE_REMOTE=2;
+
+	const NEW_LOCAL=1;
+	const NEW_REMOTE=2;
+	const DELETED_LOCAL=3;
+	const DELETED_REMOTE=4;
+	const UPDATED_LOCAL=5;
+	const UPDATED_REMOTE=6;
+	const CONFLICT=7;
+	const GARBAGE=8;
+	const UP_TO_DATE=9;
+
+	public $id;
+	public $type;
+	public $slug;
+	public $baseRevision;
+	private $localDataFetched;
+	private $remoteResourceSet;
+	private $localResourceData;
+	private $remoteResource;
+
 	/**
 	 * Construct.
 	 */
-	public function __construct($type=NULL) {
+	public function __construct($type=NULL, $slug=NULL) {
 		$this->type=$type;
-		$this->dataFetched=FALSE;
-		$this->Curl="Curl";
-		$this->job=NULL;
-	}
+		$this->slug=$slug;
 
-	/**
-	 * Set reference to job for output.
-	 */
-	public function setJob($job) {
-		$this->job=$job;
+		$this->job=NULL;
+		$this->Curl="Curl";
 	}
 
 	/**
@@ -30,96 +46,68 @@ class SyncResource extends SmartRecord {
 	public static function initialize() {
 		self::field("id","integer not null auto_increment");
 		self::field("type","varchar(255) not null");
-		self::field("localId","integer not null");
-		self::field("globalId","varchar(255) not null");
-		self::field("baseData","longtext");
+		self::field("slug","varchar(255) not null");
+		self::field("baseRevision","varchar(255) not null");
+	}
+
+	/**
+	 * Get type.
+	 */
+	public function getType() {
+		return $this->type;
 	}
 
 	/**
 	 * Get base revision.
 	 */
 	public function getBaseRevision() {
-		if (!$this->baseData)
-			return NULL;
-
-		return $this->getSyncer()->getResourceRevision($this->getBaseData());
+		return $this->baseRevision;
 	}
 
 	/**
 	 * Get revision
 	 */
-	public function getRevision() {
-		return $this->getSyncer()->getResourceRevision($this->getData());
+	public function getLocalRevision() {
+		$data=$this->getData();
+
+		if (!$data)
+			return NULL;
+
+		return md5(json_encode($data));
 	}
 
 	/**
-	 * Is this locally modified?
+	 * Ensure we have local data, if available.
 	 */
-	public function isLocallyModified() {
-		return $this->getRevision()!=$this->getBaseRevision();
-	}
+	private function ensureLocalDataFetched() {
+		if ($this->localDataFetched)
+			return;
 
-	/**
-	 * Is this a new resource?
-	 */
-	public function isNew() {
-		if ($this->getBaseRevision())
-			return FALSE;
-
-		return TRUE;
-	}
-
-	/**
-	 * Deleted?
-	 */
-	public function isDeleted() {
-		if ($this->getData())
-			return FALSE;
-
-		return TRUE;
-	}
-
-	/**
-	 * Get base data.
-	 */
-	public function getBaseData() {
-		$decodedBaseData=json_decode($this->baseData,TRUE);
-
-		if ($this->baseData && $decodedBaseData===NULL)
-			throw new Exception("Unable to decode base data");
-
-		return $decodedBaseData;
-	}
-
-	/**
-	 * Set base data.
-	 */
-	public function setBaseData($data) {
-		$this->baseData=json_encode($data);
+		$this->localDataFetched=TRUE;
+		$this->localResourceData=$this->getSyncer()->getResource($this->slug);
 	}
 
 	/**
 	 * Get data.
 	 */
 	public function getData() {
-		if (!$this->dataFetched)
-			$this->data=$this->getSyncer()->getResource($this->localId);
+		$this->ensureLocalDataFetched();
 
-		return $this->data;
+		return $this->localResourceData;
 	}
 
 	/**
 	 * Get attachments.
 	 */
 	public function getAttachments() {
-		return $this->getSyncer()->getResourceAttachments($this->localId);
+		return $this->getSyncer()->getResourceAttachments($this->slug);
 	}
 
 	/**
 	 * Get attachment entries, an array on the form:
 	 *   <formfield> => <file>
 	 */
-	public function getAttachmentEntries() {
+	/*public function getAttachmentEntries() {
 		$uploadBasedir=wp_upload_dir()["basedir"];
 
 		$attachments=$this->getAttachments();
@@ -130,7 +118,7 @@ class SyncResource extends SmartRecord {
 				$uploadBasedir."/".str_replace("{id}",$this->localId,$attachment);
 
 		return $res;
-	}
+	}*/
 
 	/**
 	 * Get syncer.
@@ -140,11 +128,10 @@ class SyncResource extends SmartRecord {
 	}
 
 	/**
-	 * Get label
+	 * Get slug.
 	 */
-	public function getLabel() {
-		$data=$this->getData();
-		return $this->getSyncer()->getResourceLabel($data);
+	public function getSlug() {
+		return $this->slug;
 	}
 
 	/**
@@ -166,18 +153,25 @@ class SyncResource extends SmartRecord {
 	}
 
 	/**
+	 * Get attachment dir.
+	 */
+	public function getAttachmentDirectory() {
+		return $this->getSyncer()->getAttachmentDirectory($this->slug);
+	}
+
+	/**
 	 * Download one attachment.
 	 */
-	private function downloadAttachment($attachment, $remoteResource) {
-		if ($this->job) {
-			$this->downloadMessage="Downloading: '".$attachment."'";
-			$this->job->status($this->downloadMessage);
+	private function downloadAttachment($attachment) {
+		$targetFileName=$this->getAttachmentDirectory()."/".$attachment;
+		if (file_exists($targetFileName)) {
+			if ($this->log)
+				$this->job->log("Attachment up to date: ".$attachment);
+			return;
 		}
 
-		$uploadBasedir=wp_upload_dir()["basedir"];
-		$localFilename=str_replace("{id}",$this->localId,"$uploadBasedir/$attachment");
-		if (file_exists($localFilename))
-			return;
+		if ($this->job)
+			$this->job->status("Downloading: '".$attachment."'");
 
 		$url=get_option("rs_remote_site_url");
 		if (!$url)
@@ -189,18 +183,18 @@ class SyncResource extends SmartRecord {
 			"action"=>"getAttachment",
 			"key"=>get_option("rs_access_key",""),
 			"filename"=>$attachment,
-			"globalId"=>$remoteResource->globalId
+			"slug"=>$this->slug
 		);
 
 		$url.="?".http_build_query($params);
 
-		$dir=dirname($localFilename);
+		$dir=dirname($targetFileName);
 		if (!is_dir($dir)) {
 			if (!mkdir($dir,0777,TRUE))
 				throw new Exception("Unable to create directory: ".$dir);
 		}
 
-		$outf=fopen($localFilename,"wb");
+		$outf=fopen($targetFileName,"wb");
 		if (!$outf)
 			throw new Exception("Unable to write attachment file: ".$localFilename);
 
@@ -213,12 +207,12 @@ class SyncResource extends SmartRecord {
 		fclose($outf);
 
 		if ($curl->error()) {
-			@unlink($localFilename);
+			unlink($targetFileName);
 			throw new Exception($curl->error());
 		}
 
 		if ($curl->getinfo(CURLINFO_HTTP_CODE)!=200) {
-			@unlink($localFilename);
+			unlink($targetFileName);
 			throw new Exception($url.": HTTP Error: ".$curl->getinfo(CURLINFO_HTTP_CODE));
 		}
 	}
@@ -226,19 +220,22 @@ class SyncResource extends SmartRecord {
 	/**
 	 * Download attachments from remote.
 	 */
-	public function downloadAttachments($remoteResource) {
-		$attachments=$remoteResource->getAttachments();
+	public function downloadAttachments() {
+		if (!$this->getRemoteResource())
+			throw new Exception("Can't download attachments, doesn't exist remote: ".$this->slug);
+
+		$attachments=$this->getRemoteResource()->getAttachments();
 
 		foreach ($attachments as $attachment)
-			$this->downloadAttachment($attachment,$remoteResource);
+			$this->downloadAttachment($attachment);
 	}
 
 	/**
 	 * Process posted attachments.
 	 */
 	public final function processPostedAttachments() {
-		if (!isset($this->localId))
-			throw new Exception("Can't process attachments, no local id yet");
+		if (!isset($this->slug))
+			throw new Exception("Can't process attachments, no slug");
 
 		$upload_base_dir=wp_upload_dir()["basedir"];
 
@@ -260,5 +257,233 @@ class SyncResource extends SmartRecord {
 			if (!$res)
 				throw new Exception("Unable to copy uploaded file");
 		}
+	}
+
+	/**
+	 * Get remote resource.
+	 */
+	public function getRemoteResource() {
+		if (!$this->remoteResourceSet)
+			throw new Exception("Remote resource not fetched");
+
+		return $this->remoteResource;
+	}
+
+	/**
+	 * Set remote resource.
+	 */
+	private function setRemoteResource($remoteResource) {
+		$this->remoteResourceSet=TRUE;
+		$this->remoteResource=$remoteResource;
+	}
+
+	/**
+	 * Find one for type.
+	 */
+	public static function findOneForType($type, $slug/*, $findFlags=0*/) {
+		$syncer=RemoteSyncPlugin::instance()->getSyncerByType($type);
+
+		$syncResource=SyncResource::findOneByQuery(
+			"SELECT * FROM %t WHERE type=%s AND slug=%s",
+			$type,$slug
+		);
+
+		if ($syncResource)
+			return $syncResource;
+
+		if ($syncer->getResource($slug))
+			return new SyncResource($type,$slug);
+
+		return NULL;
+	}
+
+	/**
+	 * Compare resource weight.
+	 */
+	private static function cmpResourceWeight($a, $b) {
+		if (!isset($a->__weight))
+			$a->__weight=$a->getSyncer()->getResourceWeight($a->getSlug());
+
+		if (!isset($b->__weight))
+			$b->__weight=$b->getSyncer()->getResourceWeight($b->getSlug());
+
+		return strcmp($a->__weight,$b->__weight);
+	}
+
+	/**
+	 * Find all for type.
+	 * Optionally populate with local and remote resource data.
+	 */
+	public static function findAllForType($type, $findFlags=0) {
+		$syncer=RemoteSyncPlugin::instance()->getSyncerByType($type);
+
+		$syncResources=SyncResource::findAllBy("type",$type);
+		$syncResourcesBySlug=array();
+
+		foreach ($syncResources as $syncResource)
+			$syncResourcesBySlug[$syncResource->getSlug()]=$syncResource;
+
+		if ($findFlags&SyncResource::POPULATE_LOCAL) {
+			$slugs=$syncer->listResourceSlugs();
+
+			foreach ($slugs as $slug) {
+				if (!isset($syncResourcesBySlug[$slug])) {
+					$syncResource=new SyncResource($type,$slug);
+					$syncResources[]=$syncResource;
+					$syncResourcesBySlug[$slug]=$syncResource;
+				}
+			}
+		}
+
+		usort($syncResources,"SyncResource::cmpResourceWeight");
+
+		if ($findFlags&SyncResource::POPULATE_REMOTE) {
+			$remoteResources=RemoteResource::fetchAllForType($type);
+
+			foreach ($remoteResources as $remoteResource) {
+				$slug=$remoteResource->getSlug();
+
+				if (!isset($syncResourcesBySlug[$slug])) {
+					$syncResource=new SyncResource($type,$slug);
+					$syncResources[]=$syncResource;
+					$syncResourcesBySlug[$slug]=$syncResource;
+				}
+
+				$syncResource=$syncResourcesBySlug[$slug];
+				$syncResource->setRemoteResource($remoteResource);
+			}
+
+			foreach ($syncResources as $syncResource)
+				$syncResource->remoteResourceSet=TRUE;
+		}
+
+		return $syncResources;
+	}
+
+	/**
+	 * Get remote revision.
+	 */
+	function getRemoteRevision() {
+		return $this->getRemoteResource()->getRevision();
+	}
+
+	/**
+	 * Create local resource with remote data.
+	 */
+	function createLocalResource() {
+		$this->getSyncer()->createResource(
+			$this->getRemoteResource()->getSlug(),
+			$this->getRemoteResource()->getData()
+		);
+
+		$this->localDataFetched=FALSE;
+		$this->baseRevision=$this->getLocalRevision();
+
+		if ($this->getRemoteRevision()!=$this->getLocalRevision())
+			throw new Exception("Local revision differ from remote after create");
+	}
+
+	/**
+	 * Update local resource with remote data.
+	 */
+	function updateLocalResource() {
+		$this->getSyncer()->updateResource(
+			$this->getRemoteResource()->getSlug(),
+			$this->getRemoteResource()->getData()
+		);
+
+		$this->localDataFetched=FALSE;
+		$this->baseRevision=$this->getLocalRevision();
+
+		if ($this->getRemoteRevision()!=$this->getLocalRevision())
+			throw new Exception("Local revision differ from remote after update");
+	}
+
+	/**
+	 * Delete the local resource.
+	 */
+	function deleteLocalResource() {
+		$this->getSyncer()->deleteResource($this->slug);
+	}
+
+	/**
+	 * Create remote resource based on local data.
+	 */
+	function createRemoteResource() {
+		RemoteSyncPlugin::instance()->remoteCall("add",array(
+			"type"=>$this->type,
+			"slug"=>$this->slug,
+			"data"=>json_encode($this->getData())
+		));
+
+		$this->baseRevision=md5(json_encode($this->getData()));
+	}
+
+	/**
+	 * Delete remote resource.
+	 */
+	function deleteRemoteResource() {
+		RemoteSyncPlugin::instance()->remoteCall("del",array(
+			"type"=>$this->type,
+			"slug"=>$this->slug
+		));
+	}
+
+	/**
+	 * Update remote resource.
+	 */
+	function updateRemoteResource() {
+		RemoteSyncPlugin::instance()->remoteCall("put",array(
+			"type"=>$this->type,
+			"slug"=>$this->slug,
+			"data"=>json_encode($this->getData()),
+			"baseRevision"=>$this->baseRevision
+		));
+
+		$this->baseRevision=md5(json_encode($this->getData()));
+	}
+
+	/**
+	 * Get state.
+	 */
+	function getState() {
+		if ($this->getRemoteResource()) {
+			if (!$this->getRemoteRevision())
+				throw new Exception("no remote revision");
+
+			if (!$this->getLocalRevision() &&
+					$this->getBaseRevision())
+				return SyncResource::DELETED_LOCAL;
+
+			if ($this->getLocalRevision()==
+					$this->getRemoteRevision())
+				return SyncResource::UP_TO_DATE;
+
+			if (!$this->getLocalRevision())
+				return SyncResource::NEW_REMOTE;
+
+			if ($this->getLocalRevision()!=$this->getBaseRevision() &&
+					$this->getRemoteRevision()!=$this->getBaseRevision())
+				return SyncResource::CONFLICT;
+
+			if ($this->getLocalRevision()!=$this->getBaseRevision())
+				return SyncResource::UPDATED_LOCAL;
+
+			if ($this->getRemoteRevision()!=$this->getBaseRevision())
+				return SyncResource::UPDATED_REMOTE;
+
+			throw new Exception("unknown state, shouldn't happen");
+		}
+
+		if (!$this->getLocalRevision())
+			return SyncResource::GARBAGE;
+
+		if ($this->getBaseRevision())
+			return SyncResource::DELETED_REMOTE;
+
+		if ($this->getLocalRevision() && !$this->getBaseRevision())
+			return SyncResource::NEW_LOCAL;
+
+		throw new Exception("unknown state, shouldn't happen");
 	}
 }

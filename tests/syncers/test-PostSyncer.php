@@ -15,30 +15,27 @@ class PostSyncerTest extends WP_UnitTestCase {
 
 		$id1=wp_insert_post(array(
 			"post_title"=>"post one",
+			"post_name"=>"post-one"
 		));
 
 		$id2=wp_insert_post(array(
 			"post_title"=>"post two",
-			"post_parent"=>$id1
+			"post_parent"=>$id1,
+			"post_name"=>"post-two"
 		));
 
 		$id3=wp_insert_post(array(
 			"post_title"=>"post three",
-			"post_parent"=>$id2
+			"post_parent"=>$id2,
+			"post_name"=>"post-three"
 		));
-
-		RemoteSyncPlugin::instance()->getSyncerByType("post")->updateSyncResources();
-
-		$gid1=RemoteSyncPlugin::instance()->getSyncerByType("post")->localToGlobal($id1);
-		$gid2=RemoteSyncPlugin::instance()->getSyncerByType("post")->localToGlobal($id2);
-		$gid3=RemoteSyncPlugin::instance()->getSyncerByType("post")->localToGlobal($id3);
 
 		$res=$api->ls(array("type"=>"post"));
 		$this->assertCount(3,$res);
 
-		$this->assertEquals($gid1,$res[0]["globalId"]);
-		$this->assertEquals($gid2,$res[1]["globalId"]);
-		$this->assertEquals($gid3,$res[2]["globalId"]);
+		$this->assertEquals("post-one",$res[0]["slug"]);
+		$this->assertEquals("post-two",$res[1]["slug"]);
+		$this->assertEquals("post-three",$res[2]["slug"]);
 
 		$post1=get_post($id1);
 		$post1->post_parent=NULL;
@@ -67,9 +64,9 @@ class PostSyncerTest extends WP_UnitTestCase {
 		$res=$api->ls(array("type"=>"post"));
 		$this->assertCount(3,$res);
 
-		$this->assertEquals($gid3,$res[0]["globalId"]);
-		$this->assertEquals($gid2,$res[1]["globalId"]);
-		$this->assertEquals($gid1,$res[2]["globalId"]);
+		$this->assertEquals("post-three",$res[0]["slug"]);
+		$this->assertEquals("post-two",$res[1]["slug"]);
+		$this->assertEquals("post-one",$res[2]["slug"]);
 	}
 }
 

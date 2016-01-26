@@ -15,12 +15,22 @@ class MockCurl {
 
 		MockCurl::$instances[]=$this;
 		$this->setopt(CURLOPT_URL,$url);
+		$this->setopt(CURLOPT_POSTFIELDS,array());
 	}
 
 	static function reset() {
 		MockCurl::$callCount=0;
 		MockCurl::$execResults=array();
 		MockCurl::$instances=array();
+		MockCurl::$execResults=array();
+	}
+
+	static function mockResult($data) {
+		MockCurl::$execResults[]=$data;
+	}
+
+	static function mockResultJson($data) {
+		MockCurl::mockResult(json_encode($data));
 	}
 
 	function setopt($option, $value) {
@@ -36,9 +46,21 @@ class MockCurl {
 
 	function exec() {
 		MockCurl::$execUrls[]=$this->url;
-		$res=MockCurl::$execResults[MockCurl::$callCount];
+		$res=NULL;
+
+		if (isset(MockCurl::$execResults[MockCurl::$callCount]))
+			$res=MockCurl::$execResults[MockCurl::$callCount];
+
+		else
+			throw new Exception(
+				"MockCurl: out of results, callcount=".MockCurl::$callCount.
+				", url=".$this->url.
+				" fields=".print_r($this->opt[CURLOPT_POSTFIELDS]));
 
 		MockCurl::$callCount++;
+
+		if (isset($this->opt[CURLOPT_FILE]))
+			fwrite($this->opt[CURLOPT_FILE],$res);
 
 		return $res;
 	}

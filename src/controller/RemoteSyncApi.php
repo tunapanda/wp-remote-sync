@@ -18,12 +18,11 @@ class RemoteSyncApi {
 	 * Get attachment file.
 	 */
 	public function getAttachment($args) {
-		$resource=SyncResource::findOneBy("globalId",$args["globalId"]);
-		if (!$resource)
-			throw new Exception("resource not found, globalId=".$args["globalId"]);
+		$syncResource=SyncResource::findOneForType($args["type"],$args["slug"]);
+		if (!$syncResource)
+			throw new Exception("resource not found, slug=".$args["slug"]);
 
-		$filename=str_replace("{id}",$resource->localId,$args["filename"]);
-		$filename=wp_upload_dir()["basedir"]."/".$filename;
+		$filename=$syncResource->getAttachmentDirectory()."/".$args["attachment"];
 
 		if (!file_exists($filename))
 			throw new Exception("file doesn't exist: ".$filename);
@@ -36,37 +35,25 @@ class RemoteSyncApi {
 	}
 
 	/**
-	 * Compare resource weight.
-	 */
-	private function cmpResourceWeight($a, $b) {
-		return strcmp($a->weight,$b->weight);
-	}
-
-	/**
 	 * List.
 	 */
 	public function ls($args) {
 		if (!isset($args["type"]))
-			throw new Exception("Expected resource type fopen(filename, mode)r ls");
+			throw new Exception("Expected resource type for ls");
 
-		$syncer=RemoteSyncPlugin::instance()->getSyncerByType($args["type"]);
-		$syncer->updateSyncResources();
-		$resources=$syncer->getSyncResources();
+		$syncResources=
+			SyncResource::findAllForType(
+				$args["type"],
+				SyncResource::POPULATE_LOCAL
+			);
+
 		$res=array();
 
-		for ($i=0; $i<sizeof($resources); $i++)
-			$resources[$i]->weight=$syncer->getResourceWeight($resources[$i]->localId);
-
-		usort($resources,array($this,"cmpResourceWeight"));
-
-		foreach ($resources as $resource) {
-			if (!$resource->isDeleted()) {
-				$res[]=array(
-					"globalId"=>$resource->globalId,
-					"revision"=>$resource->getRevision()
-				);
-			}
-		}
+		foreach ($syncResources as $syncResource)
+			$res[]=array(
+				"slug"=>$syncResource->getSlug(),
+				"revision"=>$syncResource->getLocalRevision()
+			);
 
 		return $res;
 	}
@@ -75,17 +62,21 @@ class RemoteSyncApi {
 	 * Get resource
 	 */
 	public function get($args) {
-		if (!$args["globalId"])
-			throw new Exception("Expected parameter globalId");
+		if (!isset($args["type"]) || !$args["type"])
+			throw new Exception("Expected parameter type");
 
-		$resource=SyncResource::findOneBy("globalId",$args["globalId"]);
-		$syncer=RemoteSyncPlugin::instance()->getSyncerByType($resource->type);
-		$syncer->updateSyncResources();
+		if (!isset($args["slug"]) || !$args["slug"])
+			throw new Exception("Expected parameter slug");
+
+		$resource=SyncResource::findOneForType($args["type"],$args["slug"]);
+
+		if (!$resource)
+			throw new Exception("The resource doesn't exist locally");
 
 		return array(
-			"globalId"=>$resource->globalId,
-			"revision"=>$resource->getRevision(),
-			"type"=>$resource->type,
+			"slug"=>$resource->getSlug(),
+			"revision"=>$resource->getLocalRevision(),
+			"type"=>$resource->getType(),
 			"data"=>$resource->getData(),
 			"attachments"=>$resource->getAttachments()
 		);
@@ -95,14 +86,13 @@ class RemoteSyncApi {
 	 * Add a resource.
 	 */
 	public function add($args) {
-		if (!$args["globalId"] ||
+		if (!$args["slug"] ||
 			!$args["data"] || !$args["type"])
-			throw new Exception("Expected globalId, type and data.");
+			throw new Exception("Expected slug, type and data.");
 
 		$syncer=RemoteSyncPlugin::instance()->getSyncerByType($args["type"]);
-		$syncer->updateSyncResources();
 
-		$resource=SyncResource::findOneBy("globalId",$args["globalId"]);
+		$resource=SyncResource::findOneForType($args["type"],$args["slug"]);
 		if ($resource)
 			throw new Exception("Already exists!");
 
@@ -113,22 +103,18 @@ class RemoteSyncApi {
 		if (!$data)
 			throw new Exception("Unable to parse json data");
 
-		$localId=$syncer->createResource($data);
+		$syncer->createResource($args["slug"],$data);
 
-		$localResource=new SyncResource($syncer->getType());
-		$localResource->localId=$localId;
-		$localResource->globalId=$args["globalId"];
+		$syncResource=SyncResource::findOneForType($args["type"],$args["slug"]);
 
-		try {
-			$localResource->processPostedAttachments();
+		/*try {
+			$syncResource->processPostedAttachments();
 		}
 
 		catch (Exception $e) {
-			$syncer->deleteResource($localId);
+			$syncer->deleteResource($args["slug"]);
 			throw $e;
-		}
-
-		$localResource->save();
+		}*/
 
 		return array(
 			"ok"=>1
@@ -139,15 +125,15 @@ class RemoteSyncApi {
 	 * Put.
 	 */
 	public function put($args) {
-		if (!$args["globalId"] ||
-			!$args["baseRevision"] || !$args["data"])
-			throw new Exception("Expected globalId, baseRevision and data.");
+		if (!$args["slug"] ||
+			!$args["baseRevision"] || !$args["data"] || !$args["type"])
+			throw new Exception("Expected slug, baseRevision, type and data.");
 
-		$resource=SyncResource::findOneBy("globalId",$args["globalId"]);
+		$resource=SyncResource::findOneForType($args["type"],$args["slug"]);
 		if (!$resource)
 			throw new Exception("Doesn't exist locally");
 
-		if ($args["baseRevision"]!=$resource->getRevision())
+		if ($args["baseRevision"]!=$resource->getLocalRevision())
 			throw new Exception("Wrong base revision, please pull.");
 
 		$data=json_decode($args["data"],TRUE);
@@ -158,10 +144,8 @@ class RemoteSyncApi {
 			throw new Exception("Unable to parse json data");
 
 		$syncer=$resource->getSyncer();
-		$syncer->updateResource($resource->localId,$data);
-		$resource->processPostedAttachments();
-
-		$resource->save();
+		$syncer->updateResource($resource->getSlug(),$data);
+		//$resource->processPostedAttachments();
 
 		return array(
 			"ok"=>1
@@ -172,14 +156,20 @@ class RemoteSyncApi {
 	 * Delete.
 	 */
 	public function del($args) {
-		$resource=SyncResource::findOneBy("globalId",$args["globalId"]);
+		if (!isset($args["type"]) || !$args["type"])
+			throw new Exception("Expected parameter type");
+
+		if (!isset($args["slug"]) || !$args["slug"])
+			throw new Exception("Expected parameter slug");
+
+		$resource=SyncResource::findOneForType($args["type"],$args["slug"]);
 		if (!$resource)
 			throw new Exception("Doesn't exist locally");
 
 		$syncer=$resource->getSyncer();
-		$syncer->deleteResource($resource->localId);
+		$syncer->deleteResource($resource->getSlug());
 
-		if (!$resource->getBaseRevision())
+		if (!$resource->getBaseRevision() && $resource->id)
 			$resource->delete();
 
 		return array(
@@ -213,9 +203,9 @@ class RemoteSyncApi {
 		exit();
 	}
 
-	/*
-		Handle the Api Response
-	*/
+	/**
+	 * Handle the Api Response
+	 */
 	public function doApiCall($call, $params){
 		$res = array();
 		if (!(array_key_exists("key", $params) && $params["key"] === get_option("rs_access_key",""))){

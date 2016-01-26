@@ -15,10 +15,43 @@ class AttachmentSyncer extends AResourceSyncer {
 	}
 
 	/**
+	 * Get local id by slug.
+	 */
+	private function getIdBySlug($slug) {
+		$q=new WP_Query(array(
+			"post_type"=>"attachment",
+			"post_status"=>"any",
+			"posts_per_page"=>-1,
+			"post_name"=>$slug
+		));
+
+		$posts=$q->get_posts();
+
+		if (!$posts)
+			return NULL;
+
+		return $posts[0]->ID;
+	}
+
+	/**
+	 * Get local id by slug.
+	 */
+	private function getSlugById($postId) {
+		$post=get_post($postId);
+		if (!$post)
+			return NULL;
+
+		if ($post->post_type!="attachment")
+			throw new Exception("expected post to be attachment");
+
+		return $post->post_name;
+	}
+
+	/**
 	 * List current local resources.
 	 */
-	public function listResourceIds() {
-		$ids=array();
+	public function listResourceSlugs() {
+		$slugs=array();
 
 		$q=new WP_Query(array(
 			"post_type"=>"attachment",
@@ -28,16 +61,17 @@ class AttachmentSyncer extends AResourceSyncer {
 		$posts=$q->get_posts();
 
 		foreach ($posts as $post) {
-			$ids[]=$post->ID;
+			$slugs[]=$post->post_name;
 		}
 
-		return $ids;
+		return $slugs;
 	}
 
 	/**
 	 * Get resource attachment.
 	 */
-	public function getResourceAttachments($localId) {
+	public function getResourceAttachments($slug) {
+		$localId=$this->getIdBySlug($slug);
 		$res=array();
 
 		$res[]=get_post_meta($localId,"_wp_attached_file",TRUE);
@@ -57,7 +91,8 @@ class AttachmentSyncer extends AResourceSyncer {
 	/**
 	 * Get post by local id.
 	 */
-	public function getResource($localId) {
+	public function getResource($slug) {
+		$localId=$this->getIdBySlug($slug);
 		$post=get_post($localId);
 
 		if (!$post)
@@ -93,8 +128,9 @@ class AttachmentSyncer extends AResourceSyncer {
 	/**
 	 * Create a local resource.
 	 */
-	function createResource($data) {
+	function createResource($slug, $data) {
 		$id=wp_insert_post(array(
+			"post_name"=>$slug,
 			"guid"=>$data["guid"],
 			"post_title"=>$data["post_title"],
 			"post_mime_type"=>$data["post_mime_type"],
@@ -110,27 +146,8 @@ class AttachmentSyncer extends AResourceSyncer {
 	/**
 	 * Delete a local resource.
 	 */
-	function deleteResource($localId) {
+	function deleteResource($slug) {
+		$localId=$this->getIdBySlug($slug);
 		wp_delete_post($localId);
-	}
-
-	/**
-	 * Merge resource data.
-	 */
-	function mergeResourceData($base, $local, $remote) {
-		return array(
-			"post_guid"=>$this->pickKeyValues("post_guid",$base,$local,$remote),
-			"post_title"=>$this->pickKeyValues("post_title",$base,$local,$remote),
-			"post_mime_type"=>$this->pickKeyValues("post_mime_type",$base,$local,$remote),
-			"_wp_attached_file"=>$this->pickKeyValue("_wp_attached_file",$base,$local,$remote),
-			"_wp_attachment_metadata"=>$this->pickKeyValue("_wp_attachment_metadata",$base,$local,$remote)
-		);
-	}
-
-	/**
-	 * Get sync label from data.
-	 */
-	function getResourceLabel($data) {
-		return $data["post_title"];
 	}
 }

@@ -185,27 +185,5 @@ class RemoteSyncPlugin extends Singleton {
 		$this->callMessage="Syncing...";
 
 		return $parsedRes;
-	}
-
-	/**
-	 * Get all remote resources of the specific type.
-	 */
-	public function getRemoteResources($type) {
-		$infos=$this->remoteCall("ls",array(
-			"type"=>$type
-		));
-
-		$remoteResources=[];
-
-		/*echo "heeere...";
-		print_r($infos);*/
-
-		foreach ($infos as $info) {
-			$remoteResource=new RemoteResource($type, $info["globalId"], $info["revision"]);
-			$remoteResources[]=$remoteResource;
-		}
-
-		return $remoteResources;
-	}
-	
+	}	
 }
