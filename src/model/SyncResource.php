@@ -100,7 +100,20 @@ class SyncResource extends SmartRecord {
 	 * Get attachments.
 	 */
 	public function getAttachments() {
-		return $this->getSyncer()->getResourceAttachments($this->slug);
+		$cands=$this->getSyncer()->getResourceAttachments($this->slug);
+		$used=array();
+		$attachments=array();
+
+		foreach ($cands as $cand) {
+			$filename=$this->getAttachmentDirectory()."/".$cand;
+			if (file_exists($filename) && !in_array($cand,$used)) {
+				$used[]=$cand;
+				$attachment=new Attachment($cand,filesize($filename));
+				$attachments[]=$attachment;
+			}
+		}
+
+		return $attachments;
 	}
 
 	/**
@@ -128,13 +141,8 @@ class SyncResource extends SmartRecord {
 	 * Download one attachment.
 	 */
 	private function downloadAttachment($attachment) {
-		$targetFileName=$this->getAttachmentDirectory()."/".$attachment;
-
-		if (file_exists($targetFileName)) {
-			if ($this->log)
-				$this->job->log("Attachment up to date: ".$attachment);
-			return;
-		}
+		$attachmentFileName=$attachment->getFileName();
+		$targetFileName=$this->getAttachmentDirectory()."/".$attachmentFileName;
 
 		$dir=dirname($targetFileName);
 		if (!is_dir($dir)) {
@@ -145,11 +153,24 @@ class SyncResource extends SmartRecord {
 		file_put_contents($targetFileName,"hello world");
 
 		$res=RemoteSyncPlugin::instance()->remoteCall("getAttachment")
-			->addPostField("attachment",$attachment)
+			->addPostField("attachment",$attachmentFileName)
 			->addPostField("slug",$this->slug)
 			->addPostField("type",$this->type)
 			->setDownloadFileName($targetFileName)
 			->exec();
+	}
+
+	/**
+	 * Is this attachment up to date?
+	 */
+	private function isLocalAttachmentCurrent($attachment) {
+		$targetFileName=$this->getAttachmentDirectory()."/".$attachment->getFileName();
+
+		if (file_exists($targetFileName) && 
+				filesize($targetFileName)==$attachment->getFileSize())
+			return TRUE;
+
+		return FALSE;
 	}
 
 	/**
@@ -159,10 +180,19 @@ class SyncResource extends SmartRecord {
 		if (!$this->getRemoteResource())
 			throw new Exception("Can't download attachments, doesn't exist remote: ".$this->slug);
 
+		$logger=RemoteSyncPlugin::instance()->getLogger();
 		$attachments=$this->getRemoteResource()->getAttachments();
 
-		foreach ($attachments as $attachment)
-			$this->downloadAttachment($attachment);
+		foreach ($attachments as $attachment) {
+			if (!$this->isLocalAttachmentCurrent($attachment)) {
+				$logger->log("Downloading: ".$attachment->getFileName());
+				$this->downloadAttachment($attachment);
+			}
+
+			else {
+				$logger->log("Skipping: ".$attachment->getFileName());
+			}
+		}
 	}
 
 	/**
@@ -351,12 +381,7 @@ class SyncResource extends SmartRecord {
 			->addPostField("slug",$this->slug)
 			->addPostField("data",json_encode($this->getData()));
 
-		foreach ($this->getAttachments() as $attachment)
-			$call->addFileUpload(
-				urlencode($attachment),
-				$this->getAttachmentDirectory()."/".$attachment
-			);
-
+		$this->addAttachmentsToRemoteCall($call);
 		$call->exec();
 
 		$this->baseRevision=md5(json_encode($this->getData()));
@@ -382,15 +407,50 @@ class SyncResource extends SmartRecord {
 			->addPostField("data",json_encode($this->getData()))
 			->addPostField("baseRevision",$this->baseRevision);
 
-		foreach ($this->getAttachments() as $attachment)
-			$call->addFileUpload(
-				urlencode($attachment),
-				$this->getAttachmentDirectory()."/".$attachment
-			);
-
+		$this->addAttachmentsToRemoteCall($call);
 		$call->exec();
 
 		$this->baseRevision=md5(json_encode($this->getData()));
+	}
+
+	/**
+	 * Is the attachment on the remote current with this one?
+	 */
+	private function isRemoteAttachmentCurrent($attachment) {
+		if (!$this->getRemoteResource())
+			return FALSE;
+
+		$remoteResource=$this->getRemoteResource();
+		$remoteAttachment=$remoteResource->getAttachmentByFileName($attachment->getFileName());
+
+		if (!$remoteAttachment)
+			return FALSE;
+
+		if ($remoteAttachment->getFileSize()!=$attachment->getFileSize())
+			return FALSE;
+
+		return TRUE;
+	}
+
+	/**
+	 * Add local attachments to call for upload.
+	 */
+	private function addAttachmentsToRemoteCall($call) {
+		$logger=RemoteSyncPlugin::instance()->getLogger();
+
+		foreach ($this->getAttachments() as $attachment) {
+			if (!$this->isRemoteAttachmentCurrent($attachment)) {
+				$logger->log("Uploading: ".$attachment->getFileName());
+				$call->addFileUpload(
+					urlencode($attachment->getFileName()),
+					$this->getAttachmentDirectory()."/".$attachment->getFileName()
+				);
+			}
+
+			else {
+				$logger->log("Skipping: ".$attachment->getFileName());
+			}
+		}
 	}
 
 	/**

@@ -70,7 +70,10 @@ class SyncResourceTest extends WP_UnitTestCase {
 			"type"=>"h5p",
 			"data"=>$data,
 			"attachments"=>array(
-				"an/attached/file.txt"
+				array(
+					"fileName"=>"an/attached/file.txt",
+					"fileSize"=>123
+				)
 			)
 		));
 

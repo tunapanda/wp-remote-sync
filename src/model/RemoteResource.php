@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__."/Attachment.php";
+
 /**
  * Represents one remote resource.
  */
@@ -50,7 +52,16 @@ class RemoteResource {
 			throw new Exception("Remote data is not the right revision");
 
 		$this->data=$remoteData["data"];
-		$this->attachments=$remoteData["attachments"];
+
+		$this->attachments=array();
+		foreach ($remoteData["attachments"] as $attachmentData) {
+			$attachment=new Attachment(
+				$attachmentData["fileName"],
+				$attachmentData["fileSize"]
+			);
+
+			$this->attachments[]=$attachment;
+		}
 	}
 
 	/**
@@ -69,6 +80,19 @@ class RemoteResource {
 		$this->fetch();
 
 		return $this->attachments;
+	}
+
+	/**
+	 * Get attachment by filename.
+	 */
+	public function getAttachmentByFileName($fileName) {
+		$this->fetch();
+
+		foreach ($this->attachments as $attachment)
+			if ($attachment->getFileName()==$fileName)
+				return $attachment;
+
+		return NULL;
 	}
 
 	/**

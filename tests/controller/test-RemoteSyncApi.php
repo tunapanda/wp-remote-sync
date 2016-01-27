@@ -199,6 +199,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 
 		update_post_meta($id,"_wp_attached_file","helloworld");
 
+		file_put_contents(wp_upload_dir()["basedir"]."/helloworld","content");
+
 		$syncer=RemoteSyncPlugin::instance()->getSyncerByType("attachment");
 		$attachments=$syncer->getResourceAttachments("test-attachment");
 		$this->assertEquals($attachments,array(
@@ -211,9 +213,14 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 
 		$resource=$api->get(array("slug"=>"test-attachment","type"=>"attachment"));
 
-		$this->assertEquals($resource["attachments"],array(
-			"helloworld"
-		));
+		$this->assertEquals(sizeof($resource["attachments"]),1);
+		$this->assertEquals(
+			$resource["attachments"][0],
+			array(
+				"fileName"=>"helloworld",
+				"fileSize"=>7
+			)
+		);
 	}
 
 	function test_doApiCall(){

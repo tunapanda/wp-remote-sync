@@ -83,12 +83,19 @@ class RemoteSyncApi {
 		if (!$resource)
 			throw new Exception("The resource doesn't exist locally");
 
+		$attachmentData=array();
+		foreach ($resource->getAttachments() as $attachment)
+			$attachmentData[]=array(
+				"fileName"=>$attachment->getFileName(),
+				"fileSize"=>$attachment->getFileSize()
+			);
+
 		return array(
 			"slug"=>$resource->getSlug(),
 			"revision"=>$resource->getLocalRevision(),
 			"type"=>$resource->getType(),
 			"data"=>$resource->getData(),
-			"attachments"=>$resource->getAttachments()
+			"attachments"=>$attachmentData
 		);
 	}
 
