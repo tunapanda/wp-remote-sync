@@ -11,7 +11,7 @@
 
 	print_r($res);*/
 
-	$curl=new Curl("http://localhost/wp-sync-test-remote/wp-content/plugins/wp-remote-sync/api.php");
+/*	$curl=new Curl("http://localhost/wp-sync-test-remote/wp-content/plugins/wp-remote-sync/api.php");
 	$curl
 //		->setopt(CURLOPT_RETURNTRANSFER,TRUE)
 		->addPostField("action","getAttachment")
@@ -21,4 +21,13 @@
 		->addPostField("key","")
 		->addPostField("attachment","2016/01/3D2.png")
 		->setDownloadFileName("hello.png");
-	$res=$curl->exec();
+	$res=$curl->exec();*/
+
+	function onPercent($percent) {
+		echo "percent: ".$percent."\n";
+	}
+
+	$curl=new Curl("http://localhost/repo/wp-remote-sync/tests/lab/generatelongcontent.php");
+	$curl->setPercentFunc("onPercent");
+	$curl->setopt(CURLOPT_RETURNTRANSFER,TRUE);
+	$curl->exec();

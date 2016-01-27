@@ -10,6 +10,9 @@ class Curl {
 	private static $mockCalls;
 
 	private $resultDecoding;
+	private $percentFunc;
+	private $lastPercent;
+	private $lastPercentTime;
 
 	const JSON="json";
 
@@ -26,6 +29,10 @@ class Curl {
 		$this->resultDecoding=NULL;
 		$this->postFields=NULL;
 		$this->downloadFileName=NULL;
+		$this->percentFunc=NULL;
+
+		$this->lastPercentTime=-1;
+		$this->lastPercent=-1;
 	}
 
 	/**
@@ -101,6 +108,35 @@ class Curl {
 	}
 
 	/**
+	 * Set percent func.
+	 */
+	public function setPercentFunc($percentFunc) {
+		$this->percentFunc=$percentFunc;
+	}
+
+	/**
+	 * Curl progress.
+	 */
+	private function onCurlProgress($curl, $totalDown, $down, $totalUp, $up) {
+		$percent=NULL;
+
+		if ($totalDown && $down<$totalDown)
+			$percent=round(100*$down/$totalDown);
+
+		if ($totalUp && $up<$totalUp)
+			$percent=round(100*$up/$totalUp);
+
+		$time=time();
+
+		if ($percent!==$this->lastPercent && $this->lastPercentTime!=$time) {
+			$this->lastPercent=$percent;
+			$this->lastPercentTime=$time;
+
+			call_user_func($this->percentFunc,$percent);
+		}
+	}
+
+	/**
 	 * Exec.
 	 */
 	public function exec() {
@@ -135,6 +171,12 @@ class Curl {
 		}
 
 		else {
+			if ($this->percentFunc) {
+				curl_setopt($this->curl,CURLOPT_NOPROGRESS,FALSE);
+				curl_setopt($this->curl,CURLOPT_PROGRESSFUNCTION,
+					array($this,"onCurlProgress"));
+			}
+
 			$res=curl_exec($this->curl);
 			$returnCode=$this->getinfo(CURLINFO_HTTP_CODE);
 		}
