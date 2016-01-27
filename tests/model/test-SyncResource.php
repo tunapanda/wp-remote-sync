@@ -1,7 +1,6 @@
 <?php
 
 require_once __DIR__."/../../src/model/SyncResource.php";
-require_once __DIR__."/../../src/utils/MockCurl.php";
 require_once __DIR__."/../../src/plugin/AResourceSyncer.php";
 
 class SRTestSyncer extends AResourceSyncer {
@@ -45,6 +44,8 @@ class SyncResourceTest extends WP_UnitTestCase {
 
 		if ($wpdb->last_error)
 			throw new Exception($wpdb->last_error);
+
+		Curl::initMock();
 	}
 
 	function test_downloadAttachments() {
@@ -52,7 +53,6 @@ class SyncResourceTest extends WP_UnitTestCase {
 
 		RemoteSyncPlugin::instance()->syncers=array(new H5pSyncer());
 		RemoteSyncPlugin::instance()->install();
-		RemoteSyncPlugin::instance()->Curl="MockCurl";
 
 		$data=array(
 			"test"=>"bla"
@@ -60,12 +60,11 @@ class SyncResourceTest extends WP_UnitTestCase {
 
 		$rev=md5(json_encode($data));
 
-		MockCurl::reset();
-		MockCurl::mockResultJson(array(
+		Curl::mockResult(array(
 			array("slug"=>"the-slug","revision"=>$rev)
 		));
 
-		MockCurl::MockResultJson(array(
+		Curl::mockResult(array(
 			"slug"=>"the-slug",
 			"revision"=>$rev,
 			"type"=>"h5p",
@@ -91,8 +90,7 @@ class SyncResourceTest extends WP_UnitTestCase {
 		if (file_exists($upload_base_dir."/h5p/content/777//an/attached/file.txt"))
 			unlink($upload_base_dir."/h5p/content/777//an/attached/file.txt");
 
-		MockCurl::mockResult("hello world");
-		$syncResource->Curl="MockCurl";
+		Curl::mockResult("hello world");
 		$syncResource->downloadAttachments();
 
 		$this->assertTrue(file_exists($upload_base_dir."/h5p/content/777//an/attached/file.txt"));
@@ -100,30 +98,41 @@ class SyncResourceTest extends WP_UnitTestCase {
 		$this->assertEquals($content,"hello world");
 	}
 
-	/*function test_postedAttachments() {
-		$syncResource=new SyncResource("attachment");
+	function test_postedAttachments() {
+		RemoteSyncPlugin::instance()->syncers=NULL;
+		RemoteSyncPlugin::instance()->install();
+
+		wp_insert_attachment(array(
+			"post_title"=>"test",
+			"post_content"=>"none",
+			"post_name"=>"the-slug",
+			"post_status"=>"published",
+			"post_mime_type"=>"image/png"
+		));
+
+		$syncResource=SyncResource::findOneForType("attachment","the-slug");
+		$this->assertEquals($syncResource->slug,"the-slug");
 
 		$upload_base_dir=wp_upload_dir()["basedir"];
-		if (file_exists($upload_base_dir."/some/dir/123/here/it/is.txt"))
-			unlink($upload_base_dir."/some/dir/123/here/it/is.txt");
+		if (file_exists($upload_base_dir."/here/it/is.txt"))
+			unlink($upload_base_dir."/here/it/is.txt");
 
 		$_FILES=array(
 			"__attachment0"=>array(
 				"name"=>"some.random.name",
 				"test"=>"text/plain",
 				"tmp_name"=>__DIR__."/data/emulateupload.txt",
-				"name"=>urlencode("some/dir/{id}/here/it/is.txt"),
+				"name"=>urlencode("/here/it/is.txt"),
 				"error"=>0
 			)
 		);
 
-		$syncResource->localId=123;
 		$syncResource->processPostedAttachments();
 
 		$upload_base_dir=wp_upload_dir()["basedir"];
-		$f=file_get_contents($upload_base_dir."/some/dir/123/here/it/is.txt");
+		$f=file_get_contents($upload_base_dir."/here/it/is.txt");
 		$this->assertEquals($f,"hello world");
-	}*/
+	}
 
 	function test_findAllForType() {
 		RemoteSyncPlugin::instance()->syncers=array(new SRTestSyncer("testType"));
@@ -175,15 +184,13 @@ class SyncResourceTest extends WP_UnitTestCase {
 	function test_findAllForTypeRemote() {
 		update_option("rs_remote_site_url","helloworld");
 
-		MockCurl::reset();
-		MockCurl::$execResults[]=json_encode(array(
+		Curl::mockResult(array(
 			array("slug"=>"onlyremote","revision"=>123),
 			array("slug"=>"slug1","revision"=>123)
 		));
 
 		RemoteSyncPlugin::instance()->syncers=array(new SRTestSyncer("testType"));
 		RemoteSyncPlugin::instance()->install();
-		RemoteSyncPlugin::instance()->Curl="MockCurl";
 
 		$syncResource=new SyncResource("testType","slug1");
 		$syncResource->save();
@@ -226,8 +233,7 @@ class SyncResourceTest extends WP_UnitTestCase {
 		$data=$syncer->getResource("slug1");
 		$rev=md5(json_encode($data));
 
-		MockCurl::reset();
-		MockCurl::$execResults[]=json_encode(array(
+		Curl::mockResult(array(
 			array("slug"=>"onlyremote","revision"=>"05a1ad082ad35cad7aac7b18e232feb3"),
 			array("slug"=>"slug1","revision"=>$rev)
 		));

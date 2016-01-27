@@ -1,20 +1,22 @@
 <?php
 
 require_once __DIR__."/../../src/controller/RemoteSyncOperations.php";
-require_once __DIR__."/../../src/utils/MockCurl.php";
 require_once __DIR__."/../../src/utils/MockJob.php";
 
 class RemoteSyncOperationsTest extends WP_UnitTestCase {
 
+	function setUp() {
+		parent::setUp();
+		Curl::initMock();
+	}
+
 	function test_status() {
 		RemoteSyncPlugin::instance()->install();
-		RemoteSyncPlugin::instance()->Curl="MockCurl";
 
-		MockCurl::reset();
-		MockCurl::MockResultJson(array(
+		Curl::mockResult(array(
 			array("slug"=>"the-slug","revision"=>"5")
 		));
-		MockCurl::MockResultJson(array());
+		Curl::mockResult(array());
 
 		update_option("rs_remote_site_url","http://example.com/");
 
@@ -33,7 +35,6 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 
 	function test_pull() {
 		RemoteSyncPlugin::instance()->install();
-		RemoteSyncPlugin::instance()->Curl="MockCurl";
 
 		$data=array(
 			"post_name"=>"the-slug",
@@ -48,18 +49,17 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 
 		$rev=md5(json_encode($data));
 
-		MockCurl::reset();
-		MockCurl::MockResultJson(array(
+		Curl::mockResult(array(
 			array("slug"=>"the-slug","revision"=>$rev)
 		));
-		MockCurl::MockResultJson(array(
+		Curl::mockResult(array(
 			"slug"=>"the-slug",
 			"revision"=>$rev,
 			"type"=>"post",
 			"data"=>$data,
 			"attachments"=>array()
 		));
-		MockCurl::MockResultJson(array());
+		Curl::mockResult(array());
 
 		update_option("rs_remote_site_url","http://example.com/");
 
@@ -92,18 +92,17 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 
 		$rev=md5(json_encode($data));
 
-		MockCurl::reset();
-		MockCurl::MockResultJson(array(
+		Curl::mockResult(array(
 			array("slug"=>"the-slug","revision"=>$rev)
 		));
-		MockCurl::MockResultJson(array(
+		Curl::mockResult(array(
 			"slug"=>"the-slug",
 			"revision"=>$rev,
 			"type"=>"post",
 			"data"=>$data,
 			"attachments"=>array()
 		));
-		MockCurl::MockResultJson(array());
+		Curl::mockResult(array());
 
 		$job=new MockJob();
 		$op=new RemoteSyncOperations();
@@ -115,9 +114,9 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 		$this->assertEquals($messages[1],"  the-slug: Updated local.");
 
 		/**** Deleted data. ****/
-		MockCurl::reset();
-		MockCurl::MockResultJson(array());
-		MockCurl::MockResultJson(array());
+		Curl::initMock();
+		Curl::mockResult(array());
+		Curl::mockResult(array());
 
 		$job=new MockJob();
 		$op=new RemoteSyncOperations();
@@ -137,7 +136,6 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 
 	function test_push() {
 		RemoteSyncPlugin::instance()->install();
-		RemoteSyncPlugin::instance()->Curl="MockCurl";
 
 		$postId=wp_insert_post(array(
 			'post_content'=>'content',
@@ -147,10 +145,9 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 
 		update_option("rs_remote_site_url","http://example.com/");
 
-		MockCurl::reset();
-		MockCurl::mockResultJson(array());
-		MockCurl::mockResultJson(array());
-		MockCurl::mockResultJson(array());
+		Curl::mockResult(array());
+		Curl::mockResult(array());
+		Curl::mockResult(array());
 
 		$job=new MockJob();
 		$op=new RemoteSyncOperations();
@@ -158,12 +155,12 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 		$op->push();
 
 		wp_trash_post($postId);
-		MockCurl::reset();
-		MockCurl::MockResultJson(array(
+		Curl::initMock();
+		Curl::mockResult(array(
 			array("slug"=>'the-slug','revision'=>"hello")
 		));
-		MockCurl::mockResultJson(array());
-		MockCurl::mockResultJson(array());
+		Curl::mockResult(array());
+		Curl::mockResult(array());
 
 		$job=new MockJob();
 		$op=new RemoteSyncOperations();

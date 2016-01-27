@@ -18,6 +18,9 @@ class RemoteSyncApi {
 	 * Get attachment file.
 	 */
 	public function getAttachment($args) {
+		if (!$args["attachment"])
+			throw new Exception("expected arg: attachment");
+
 		$syncResource=SyncResource::findOneForType($args["type"],$args["slug"]);
 		if (!$syncResource)
 			throw new Exception("resource not found, slug=".$args["slug"]);
@@ -26,6 +29,9 @@ class RemoteSyncApi {
 
 		if (!file_exists($filename))
 			throw new Exception("file doesn't exist: ".$filename);
+
+		if (!is_file($filename))
+			throw new Exception("that's not a file: ".$filename);
 
 		$type=mime_content_type($filename);
 		header("Content-Type: $type");
@@ -107,14 +113,14 @@ class RemoteSyncApi {
 
 		$syncResource=SyncResource::findOneForType($args["type"],$args["slug"]);
 
-		/*try {
+		try {
 			$syncResource->processPostedAttachments();
 		}
 
 		catch (Exception $e) {
 			$syncer->deleteResource($args["slug"]);
 			throw $e;
-		}*/
+		}
 
 		return array(
 			"ok"=>1
@@ -145,7 +151,7 @@ class RemoteSyncApi {
 
 		$syncer=$resource->getSyncer();
 		$syncer->updateResource($resource->getSlug(),$data);
-		//$resource->processPostedAttachments();
+		$resource->processPostedAttachments();
 
 		return array(
 			"ok"=>1

@@ -126,64 +126,21 @@ class RemoteSyncPlugin extends Singleton {
 	}
 
 	/**
-	 * Make a call to the remote.
+	 * Create a remote call.
 	 */
-	public function remoteCall($method, $args=array(), $attachments=array()) {
-		$this->lastPrintedMessage="";
+	public function remoteCall($action) {
+		$url=trim(get_option("rs_remote_site_url"));
 
-		if ($this->job)
-			$this->job->status($this->callMessage);
-
-		$args["action"]=$method;
-		$args["key"]=get_option("rs_access_key");
-		$url=get_option("rs_remote_site_url");
-		if (!trim($url))
-			throw new Exception("Remote site url not set");
+		if (!$url)
+			throw new Exception("No remote set.");
 
 		$url.="/wp-content/plugins/wp-remote-sync/api.php";
+		$curl=new Curl($url);
 
-		$curl=new $this->Curl($url);
-		$curl->setopt(CURLOPT_RETURNTRANSFER,TRUE);
-		$curl->setopt(CURLOPT_POST,1);
-		$curl->setopt(CURLOPT_NOPROGRESS,FALSE);
-		$curl->setopt(CURLOPT_PROGRESSFUNCTION,array($this,"remoteCallCurlProgress"));
-		$postfields=$args;
+		$curl->setResultDecoding(Curl::JSON);
+		$curl->addPostField("action",$action);
+		$curl->addPostField("key",trim(get_option("rs_access_key")));
 
-		foreach ($attachments as $fieldname=>$filename) {
-			$postfields[$fieldname]=new CurlFile(
-				$filename,
-				"text/plain",
-				$fieldname
-			);
-		}
-
-		$curl->setopt(CURLOPT_POSTFIELDS,$postfields);
-
-		$res=$curl->exec();
-		if ($curl->error())
-			throw new Exception("Curl error: ".$curl->error());
-
-		$returnCode=$curl->getinfo(CURLINFO_HTTP_CODE);
-		$curl->close();
-
-		if ($returnCode!=200)
-			throw new Exception("Unexpected return code: ".$returnCode."\n".$res);
-
-		//echo "curl res: ".$res;
-
-		$parsedRes=json_decode($res,TRUE);
-
-		if ($parsedRes===NULL)
-			throw new Exception("Unable to parse json... ".$res);
-
-		if (array_key_exists("Error", $parsedRes))
-			throw new Exception($parsedRes["Error"]);
-
-		if ($this->job)
-			$this->job->status("");
-
-		$this->callMessage="Syncing...";
-
-		return $parsedRes;
-	}	
+		return $curl;
+	}
 }

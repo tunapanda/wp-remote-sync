@@ -156,13 +156,23 @@ class RemoteSyncOperations {
 				switch ($syncResource->getState()) {
 					case SyncResource::NEW_REMOTE:
 						$syncResource->createLocalResource();
-						//$syncResource->downloadAttachments();
+
+						try {
+							$syncResource->downloadAttachments();
+						}
+
+						catch (Exception $e) {
+							$syncResource->deleteLocalResource();
+							throw $e;
+						}
+
 						$syncResource->save();
 						$this->job->log("  ".$syncResource->getSlug().": Created local.");
 						break;
 
 					case SyncResource::UPDATED_REMOTE:
 						$syncResource->updateLocalResource();
+						$syncResource->downloadAttachments();
 						$syncResource->save();
 						$this->job->log("  ".$syncResource->getSlug().": Updated local.");
 						break;

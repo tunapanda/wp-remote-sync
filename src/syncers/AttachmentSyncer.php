@@ -18,19 +18,15 @@ class AttachmentSyncer extends AResourceSyncer {
 	 * Get local id by slug.
 	 */
 	private function getIdBySlug($slug) {
-		$q=new WP_Query(array(
-			"post_type"=>"attachment",
-			"post_status"=>"any",
-			"posts_per_page"=>-1,
-			"post_name"=>$slug
-		));
+		global $wpdb;
 
-		$posts=$q->get_posts();
+		$q=$wpdb->prepare("SELECT ID FROM {$wpdb->prefix}posts WHERE post_name=%s",$slug);
+		$id=$wpdb->get_var($q);
 
-		if (!$posts)
-			return NULL;
+		if ($wpdb->last_error)
+			throw new Exception($wpdb->last_error);
 
-		return $posts[0]->ID;
+		return $id;
 	}
 
 	/**
@@ -102,8 +98,8 @@ class AttachmentSyncer extends AResourceSyncer {
 			return NULL;
 
 		return array(
-			"guid"=>$post->guid,
 			"post_title"=>$post->post_title,
+			"post_name"=>$post->post_name,
 			"post_mime_type"=>$post->post_mime_type,
 			"_wp_attached_file"=>get_post_meta($localId,"_wp_attached_file",TRUE),
 			"_wp_attachment_metadata"=>get_post_meta($localId,"_wp_attachment_metadata",TRUE)
@@ -113,10 +109,14 @@ class AttachmentSyncer extends AResourceSyncer {
 	/**
 	 * Update a local resource with data.
 	 */
-	function updateResource($localId, $data) {
+	function updateResource($slug, $data) {
+		$localId=$this->getIdBySlug($slug);
 		$post=get_post($localId);
 
-		$post->guid=$data["guid"];
+		if ($slug!=$data["post_name"])
+			throw new Exception("Sanity check failed, slug!=post_name");
+
+		$post->post_name=$data["post_name"];
 		$post->post_title=$data["post_title"];
 		$post->post_mime_type=$data["post_mime_type"];
 		wp_update_post($post);
@@ -129,6 +129,9 @@ class AttachmentSyncer extends AResourceSyncer {
 	 * Create a local resource.
 	 */
 	function createResource($slug, $data) {
+		if ($slug!=$data["post_name"])
+			throw new Exception("Sanity check failed, slug!=post_name");
+
 		$id=wp_insert_post(array(
 			"post_name"=>$slug,
 			"guid"=>$data["guid"],

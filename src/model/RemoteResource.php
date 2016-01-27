@@ -38,10 +38,10 @@ class RemoteResource {
 
 		$this->fetched=TRUE;
 
-		$remoteData=RemoteSyncPlugin::instance()->remoteCall("get",array(
-			"type"=>$this->type,
-			"slug"=>$this->slug
-		));
+		$remoteData=RemoteSyncPlugin::instance()->remoteCall("get")
+			->addPostField("type",$this->type)
+			->addPostField("slug",$this->slug)
+			->exec();
 
 		if (!$remoteData)
 			throw new Exception("Unable to fetch remote data.");
@@ -89,9 +89,9 @@ class RemoteResource {
 	 * Fetch all remote resources for type.
 	 */
 	public static function fetchAllForType($type) {
-		$infos=RemoteSyncPlugin::instance()->remoteCall("ls",array(
-			"type"=>$type
-		));
+		$infos=RemoteSyncPlugin::instance()->remoteCall("ls")
+			->addPostField("type",$type)
+			->exec();
 
 		$remoteResources=[];
 

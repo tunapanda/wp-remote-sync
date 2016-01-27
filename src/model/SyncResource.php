@@ -104,23 +104,6 @@ class SyncResource extends SmartRecord {
 	}
 
 	/**
-	 * Get attachment entries, an array on the form:
-	 *   <formfield> => <file>
-	 */
-	/*public function getAttachmentEntries() {
-		$uploadBasedir=wp_upload_dir()["basedir"];
-
-		$attachments=$this->getAttachments();
-		$res=array();
-
-		foreach ($attachments as $attachment)
-			$res[urlencode($attachment)]=
-				$uploadBasedir."/".str_replace("{id}",$this->localId,$attachment);
-
-		return $res;
-	}*/
-
-	/**
 	 * Get syncer.
 	 */
 	public function getSyncer() {
@@ -135,24 +118,6 @@ class SyncResource extends SmartRecord {
 	}
 
 	/**
-	 * Progress when downloading.
-	 */
-	public function downloadCurlProgress($id, $downTotal, $down, $upTotal, $up) {
-		if (!$this->job)
-			return;
-
-		$percent=0;
-
-		if ($upTotal && $up<$upTotal)
-			$percent=round(100*$up/$upTotal);
-
-		else if ($downTotal && $down<$downTotal)
-			$percent=round(100*$down/$downTotal);
-
-		$this->job->progressStatus($this->downloadMessage,$percent);
-	}
-
-	/**
 	 * Get attachment dir.
 	 */
 	public function getAttachmentDirectory() {
@@ -164,29 +129,12 @@ class SyncResource extends SmartRecord {
 	 */
 	private function downloadAttachment($attachment) {
 		$targetFileName=$this->getAttachmentDirectory()."/".$attachment;
+
 		if (file_exists($targetFileName)) {
 			if ($this->log)
 				$this->job->log("Attachment up to date: ".$attachment);
 			return;
 		}
-
-		if ($this->job)
-			$this->job->status("Downloading: '".$attachment."'");
-
-		$url=get_option("rs_remote_site_url");
-		if (!$url)
-			throw new Exception("Remote site url not set for fetching attachment.");
-
-		$url.="/wp-content/plugins/wp-remote-sync/api.php";
-
-		$params=array(
-			"action"=>"getAttachment",
-			"key"=>get_option("rs_access_key",""),
-			"filename"=>$attachment,
-			"slug"=>$this->slug
-		);
-
-		$url.="?".http_build_query($params);
 
 		$dir=dirname($targetFileName);
 		if (!is_dir($dir)) {
@@ -194,27 +142,14 @@ class SyncResource extends SmartRecord {
 				throw new Exception("Unable to create directory: ".$dir);
 		}
 
-		$outf=fopen($targetFileName,"wb");
-		if (!$outf)
-			throw new Exception("Unable to write attachment file: ".$localFilename);
+		file_put_contents($targetFileName,"hello world");
 
-		$curl=new $this->Curl($url);
-		$curl->setopt(CURLOPT_FILE,$outf);
-		$curl->setopt(CURLOPT_HEADER,0);
-		$curl->setopt(CURLOPT_NOPROGRESS,FALSE);
-		$curl->setopt(CURLOPT_PROGRESSFUNCTION,array($this,"downloadCurlProgress"));
-		$curl->exec();
-		fclose($outf);
-
-		if ($curl->error()) {
-			unlink($targetFileName);
-			throw new Exception($curl->error());
-		}
-
-		if ($curl->getinfo(CURLINFO_HTTP_CODE)!=200) {
-			unlink($targetFileName);
-			throw new Exception($url.": HTTP Error: ".$curl->getinfo(CURLINFO_HTTP_CODE));
-		}
+		$res=RemoteSyncPlugin::instance()->remoteCall("getAttachment")
+			->addPostField("attachment",$attachment)
+			->addPostField("slug",$this->slug)
+			->addPostField("type",$this->type)
+			->setDownloadFileName($targetFileName)
+			->exec();
 	}
 
 	/**
@@ -244,8 +179,9 @@ class SyncResource extends SmartRecord {
 				throw new Exception("Unable to process uploaded file: ".$uploadedFile["error"]);
 
 			$fileName=urldecode($uploadedFile["name"]);
-			$fileName=str_replace("{id}",$this->localId,$fileName);
-			$targetFileName=$upload_base_dir."/".$fileName;
+			$targetFileName=$this->getAttachmentDirectory()."/".$fileName;
+			//echo "processing: $targetFileName\n";
+
 			$dir=dirname($targetFileName);
 
 			if (!file_exists($dir)) {
@@ -396,7 +332,7 @@ class SyncResource extends SmartRecord {
 		$this->baseRevision=$this->getLocalRevision();
 
 		if ($this->getRemoteRevision()!=$this->getLocalRevision())
-			throw new Exception("Local revision differ from remote after update");
+			throw new Exception("Local revision differ from remote after update\nlocal: ".json_encode($this->getData())."\n remote: ".json_encode($this->getRemoteResource()->getData()));
 	}
 
 	/**
@@ -410,11 +346,18 @@ class SyncResource extends SmartRecord {
 	 * Create remote resource based on local data.
 	 */
 	function createRemoteResource() {
-		RemoteSyncPlugin::instance()->remoteCall("add",array(
-			"type"=>$this->type,
-			"slug"=>$this->slug,
-			"data"=>json_encode($this->getData())
-		));
+		$call=RemoteSyncPlugin::instance()->remoteCall("add")
+			->addPostField("type",$this->type)
+			->addPostField("slug",$this->slug)
+			->addPostField("data",json_encode($this->getData()));
+
+		foreach ($this->getAttachments() as $attachment)
+			$call->addFileUpload(
+				urlencode($attachment),
+				$this->getAttachmentDirectory()."/".$attachment
+			);
+
+		$call->exec();
 
 		$this->baseRevision=md5(json_encode($this->getData()));
 	}
@@ -423,22 +366,29 @@ class SyncResource extends SmartRecord {
 	 * Delete remote resource.
 	 */
 	function deleteRemoteResource() {
-		RemoteSyncPlugin::instance()->remoteCall("del",array(
-			"type"=>$this->type,
-			"slug"=>$this->slug
-		));
+		RemoteSyncPlugin::instance()->remoteCall("del")
+			->addPostField("type",$this->type)
+			->addPostField("slug",$this->slug)
+			->exec();
 	}
 
 	/**
 	 * Update remote resource.
 	 */
 	function updateRemoteResource() {
-		RemoteSyncPlugin::instance()->remoteCall("put",array(
-			"type"=>$this->type,
-			"slug"=>$this->slug,
-			"data"=>json_encode($this->getData()),
-			"baseRevision"=>$this->baseRevision
-		));
+		$call=RemoteSyncPlugin::instance()->remoteCall("put")
+			->addPostField("type",$this->type)
+			->addPostField("slug",$this->slug)
+			->addPostField("data",json_encode($this->getData()))
+			->addPostField("baseRevision",$this->baseRevision);
+
+		foreach ($this->getAttachments() as $attachment)
+			$call->addFileUpload(
+				urlencode($attachment),
+				$this->getAttachmentDirectory()."/".$attachment
+			);
+
+		$call->exec();
 
 		$this->baseRevision=md5(json_encode($this->getData()));
 	}
