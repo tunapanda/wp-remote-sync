@@ -20,8 +20,7 @@ class RemoteSyncPlugin extends Singleton {
 		$this->syncers=NULL;
 		$this->api=NULL;
 		$this->operations=NULL;
-		$this->Curl="Curl";
-		$this->job=NULL;
+		$this->logger=NULL;
 
 		$this->callMessage="Syncing...";
 		$this->lastPrintedMessage="";
@@ -114,8 +113,18 @@ class RemoteSyncPlugin extends Singleton {
 	/**
 	 * Set long run job.
 	 */
-	public function setLongRunJob($job) {
-		$this->job=$job;
+	public function getLogger() {
+		if (!$this->logger)
+			throw new Exception("No logger installed");
+
+		return $this->logger;
+	}
+
+	/**
+	 * Get logger.
+	 */
+	public function setLogger($logger) {
+		$this->logger=$logger;
 	}
 
 	/**

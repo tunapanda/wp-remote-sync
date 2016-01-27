@@ -36,6 +36,10 @@ class RemoteSyncApi {
 		$type=mime_content_type($filename);
 		header("Content-Type: $type");
 
+		$filesize=filesize($filename);
+		header("Content-Length: ".$filesize);
+    	header("Content-Range: 0-".($filesize-1)."/".$filesize);
+
 		readfile($filename);
 		exit();
 	}

@@ -8,5 +8,11 @@ use remotesync\WpUtil;
 require_once WpUtil::getWpLoadPath();
 require_once ABSPATH.'wp-admin/includes/plugin.php';
 
-$plugin=new RemoteSyncPlugin();
-$plugin->getOperations()->handleOperation($_REQUEST["action"]);
+$logger=new EventStream();
+$logger->start();
+
+$instance=RemoteSyncPlugin::instance();
+$instance->setLogger($logger);
+$instance->getOperations()->handleOperation($_REQUEST["action"]);
+
+$logger->done();

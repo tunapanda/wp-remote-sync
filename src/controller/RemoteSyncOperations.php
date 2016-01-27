@@ -21,9 +21,10 @@ class RemoteSyncOperations {
 	 * Handle exception in api call.
 	 */
 	public function handleException($exception) {
-		$this->job->log("** Error **");
-		$this->job->log($exception->getMessage());
-		$this->job->done();
+		$this->log("** Error **");
+		$this->log($exception->getMessage());
+
+		RemoteSyncPlugin::instance()->getLogger()->done();
 		exit();
 	}
 
@@ -31,11 +32,6 @@ class RemoteSyncOperations {
 	 * Handle api call.
 	 */
 	public function handleOperation($operation) {
-		$this->job=new EventStream();
-		$this->job->start();
-
-		RemoteSyncPlugin::instance()->setLongRunJob($this->job);
-
 		set_exception_handler(array($this,"handleException"));
 
 		$operation=strtolower($operation);
@@ -44,9 +40,15 @@ class RemoteSyncOperations {
 
 		call_user_func(array($this,$operation));
 
-		$this->job->log("");
-		$this->job->log("Done!");
-		$this->job->done();
+		$this->log("");
+		$this->log("Done!");
+	}
+
+	/**
+	 * Log.
+	 */
+	private function log($message) {
+		RemoteSyncPlugin::instance()->getLogger()->log($message);
 	}
 
 	/**
@@ -64,7 +66,7 @@ class RemoteSyncOperations {
 		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();
 
 		foreach ($syncers as $syncer) {
-			$this->job->log("Status: ".$syncer->getType());
+			$this->log("Status: ".$syncer->getType());
 
 			$syncResources=SyncResource::findAllForType(
 				$syncer->getType(),
@@ -116,25 +118,25 @@ class RemoteSyncOperations {
 			}
 
 			if ($newLocal)
-				$this->job->log("  New local items:        ".$newLocal);
+				$this->log("  New local items:        ".$newLocal);
 
 			if ($newRemote)
-				$this->job->log("  New remote items:       ".$newRemote);
+				$this->log("  New remote items:       ".$newRemote);
 
 			if ($deletedLocal)
-				$this->job->log("  Deleted local items:    ".$deletedLocal);
+				$this->log("  Deleted local items:    ".$deletedLocal);
 
 			if ($deletedRemote)
-				$this->job->log("  Deleted remote items:   ".$deletedRemote);
+				$this->log("  Deleted remote items:   ".$deletedRemote);
 
 			if ($updatedLocal)
-				$this->job->log("  Updated local items:    ".$updatedLocal);
+				$this->log("  Updated local items:    ".$updatedLocal);
 
 			if ($updatedRemote)
-				$this->job->log("  Updated remote items:   ".$updatedRemote);
+				$this->log("  Updated remote items:   ".$updatedRemote);
 
 			if ($needsMerge)
-				$this->job->log("  Conflicting:            ".$needsMerge);
+				$this->log("  Conflicting:            ".$needsMerge);
 		}
 	}
 
@@ -145,7 +147,7 @@ class RemoteSyncOperations {
 		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();
 
 		foreach ($syncers as $syncer) {
-			$this->job->log("Pull: ".$syncer->getType());
+			$this->log("Pull: ".$syncer->getType());
 
 			$syncResources=SyncResource::findAllForType(
 				$syncer->getType(),
@@ -167,20 +169,20 @@ class RemoteSyncOperations {
 						}
 
 						$syncResource->save();
-						$this->job->log("  ".$syncResource->getSlug().": Created local.");
+						$this->log("  ".$syncResource->getSlug().": Created local.");
 						break;
 
 					case SyncResource::UPDATED_REMOTE:
 						$syncResource->updateLocalResource();
 						$syncResource->downloadAttachments();
 						$syncResource->save();
-						$this->job->log("  ".$syncResource->getSlug().": Updated local.");
+						$this->log("  ".$syncResource->getSlug().": Updated local.");
 						break;
 
 					case SyncResource::DELETED_REMOTE:
 						$syncResource->deleteLocalResource();
 						$syncResource->delete();
-						$this->job->log("  ".$syncResource->getSlug().": Deleted local.");
+						$this->log("  ".$syncResource->getSlug().": Deleted local.");
 						break;
 
 					case SyncResource::GARBAGE:
@@ -192,17 +194,17 @@ class RemoteSyncOperations {
 							case "prioritize_local":
 								$syncResource->baseRevision=$syncResource->getRemoteRevision();
 								$syncResource->save();
-								$this->job->log("  ".$syncResource->getSlug().": Conflict, using local.");
+								$this->log("  ".$syncResource->getSlug().": Conflict, using local.");
 								break;
 
 							case "prioritize_remote":
 								$syncResource->updateLocalResource();
 								$syncResource->save();
-								$this->job->log("  ".$syncResource->getSlug().": Conflict, using remote.");
+								$this->log("  ".$syncResource->getSlug().": Conflict, using remote.");
 								break;
 
 							default:
-								$this->job->log("  ".$syncResource->getSlug().": Conflict, skipping.");
+								$this->log("  ".$syncResource->getSlug().": Conflict, skipping.");
 								break;
 						}
 						break;
@@ -222,7 +224,7 @@ class RemoteSyncOperations {
 		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();
 
 		foreach ($syncers as $syncer) {
-			$this->job->log("Push: ".$syncer->getType());
+			$this->log("Push: ".$syncer->getType());
 
 			$syncResources=SyncResource::findAllForType(
 				$syncer->getType(),
@@ -234,29 +236,29 @@ class RemoteSyncOperations {
 					case SyncResource::NEW_REMOTE:
 					case SyncResource::UPDATED_REMOTE:
 					case SyncResource::DELETED_REMOTE:
-						$this->job($syncResource->getSlug.": Remotely changed, please pull.");
+						$this->log($syncResource->getSlug.": Remotely changed, please pull.");
 						break;
 
 					case SyncResource::NEW_LOCAL:
 						$syncResource->createRemoteResource();
 						$syncResource->save();
-						$this->job->log("  ".$syncResource->getSlug().": Created remote.");
+						$this->log("  ".$syncResource->getSlug().": Created remote.");
 						break;
 
 					case SyncResource::UPDATED_LOCAL:
 						$syncResource->updateRemoteResource();
 						$syncResource->save();
-						$this->job->log("  ".$syncResource->getSlug().": Updated remote.");
+						$this->log("  ".$syncResource->getSlug().": Updated remote.");
 						break;
 
 					case SyncResource::DELETED_LOCAL:
 						$syncResource->deleteRemoteResource();
 						$syncResource->delete();
-						$this->job->log("  ".$syncResource->getSlug().": Deleted remote.");
+						$this->log("  ".$syncResource->getSlug().": Deleted remote.");
 						break;
 
 					case SyncResource::CONFLICT:
-						$this->job->log("  ".$syncResource->getSlug().": Conflict, skipping.");
+						$this->log("  ".$syncResource->getSlug().": Conflict, skipping.");
 						break;
 
 					case SyncResource::UP_TO_DATE:

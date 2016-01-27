@@ -8,6 +8,8 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 	function setUp() {
 		parent::setUp();
 		Curl::initMock();
+
+		RemoteSyncPlugin::instance()->setLogger(new MockJob());
 	}
 
 	function test_status() {
@@ -20,13 +22,10 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 
 		update_option("rs_remote_site_url","http://example.com/");
 
-		$job=new MockJob();
-
 		$op=new RemoteSyncOperations();
-		$op->job=$job;
 		$op->status();
 
-		$messages=$job->getMessages();
+		$messages=RemoteSyncPlugin::instance()->getLogger()->getMessages();
 		$this->assertEquals(3,sizeof($messages));
 		$this->assertEquals($messages[0],"Status: post");
 		$this->assertEquals($messages[1],"  New remote items:       1");
@@ -63,9 +62,7 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 
 		update_option("rs_remote_site_url","http://example.com/");
 
-		$job=new MockJob();
 		$op=new RemoteSyncOperations();
-		$op->job=$job;
 		$op->pull();
 
 		$q=new WP_Query(array(
@@ -74,9 +71,8 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 		));
 		$this->assertEquals(1,sizeof($q->get_posts()));
 
-		$messages=$job->getMessages();
+		$messages=RemoteSyncPlugin::instance()->getLogger()->getMessages();
 		$this->assertEquals(3,sizeof($messages));
-		//print_r($messages);
 
 		/**** Updated data. ****/
 		$data=array(
@@ -104,12 +100,12 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 		));
 		Curl::mockResult(array());
 
-		$job=new MockJob();
+		RemoteSyncPlugin::instance()->setLogger(new MockJob());
+
 		$op=new RemoteSyncOperations();
-		$op->job=$job;
 		$op->pull();
 
-		$messages=$job->getMessages();
+		$messages=RemoteSyncPlugin::instance()->getLogger()->getMessages();
 		$this->assertEquals(3,sizeof($messages));
 		$this->assertEquals($messages[1],"  the-slug: Updated local.");
 
@@ -118,12 +114,12 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 		Curl::mockResult(array());
 		Curl::mockResult(array());
 
-		$job=new MockJob();
+		RemoteSyncPlugin::instance()->setLogger(new MockJob());
+
 		$op=new RemoteSyncOperations();
-		$op->job=$job;
 		$op->pull();
 
-		$messages=$job->getMessages();
+		$messages=RemoteSyncPlugin::instance()->getLogger()->getMessages();
 		$this->assertEquals(3,sizeof($messages));
 		$this->assertEquals($messages[1],"  the-slug: Deleted local.");
 
@@ -149,9 +145,7 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 		Curl::mockResult(array());
 		Curl::mockResult(array());
 
-		$job=new MockJob();
 		$op=new RemoteSyncOperations();
-		$op->job=$job;
 		$op->push();
 
 		wp_trash_post($postId);
@@ -162,9 +156,7 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 		Curl::mockResult(array());
 		Curl::mockResult(array());
 
-		$job=new MockJob();
 		$op=new RemoteSyncOperations();
-		$op->job=$job;
 		$op->push();
 	}
 }
