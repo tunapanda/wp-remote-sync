@@ -93,24 +93,6 @@ class RemoteSyncPlugin extends Singleton {
 	}
 
 	/**
-	 * Curl progress.
-	 */
-	public function remoteCallCurlProgress($id, $downTotal, $down, $upTotal, $up) {
-		if (!$this->job)
-			return;
-
-		$percent=0;
-
-		if ($upTotal && $up<$upTotal)
-			$percent=round(100*$up/$upTotal);
-
-		else if ($downTotal && $down<$downTotal)
-			$percent=round(100*$down/$downTotal);
-
-		$this->job->progressStatus($this->callMessage,$percent);
-	}
-
-	/**
 	 * Set long run job.
 	 */
 	public function getLogger() {
@@ -128,16 +110,27 @@ class RemoteSyncPlugin extends Singleton {
 	}
 
 	/**
-	 * Set the message to show for next remote calls.
+	 * Curl progress.
 	 */
-	public function setCallMessage($message) {
-		$this->callMessage=$message;
+	public function onCurlPercent($percent) {
+		if (!$this->logger)
+			return;
+
+		if ($percent)
+			$percent.="%";
+
+		$this->logger->status($this->remoteCallStatus." ".$percent);
 	}
 
 	/**
 	 * Create a remote call.
 	 */
-	public function remoteCall($action) {
+	public function remoteCall($action, $message="Please wait...") {
+		$this->remoteCallStatus=$message;
+
+		if ($this->logger)
+			$this->logger->status($this->remoteCallStatus);
+
 		$url=trim(get_option("rs_remote_site_url"));
 
 		if (!$url)
@@ -149,6 +142,7 @@ class RemoteSyncPlugin extends Singleton {
 		$curl->setResultDecoding(Curl::JSON);
 		$curl->addPostField("action",$action);
 		$curl->addPostField("key",trim(get_option("rs_access_key")));
+		$curl->setPercentFunc(array($this,"onCurlPercent"));
 
 		return $curl;
 	}

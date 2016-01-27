@@ -15,6 +15,12 @@ class MockJob {
 	}
 
 	/**
+	 * Status.
+	 */
+	public function status($message) {
+	}
+
+	/**
 	 * Get logged messages.
 	 */
 	public function getMessages() {
