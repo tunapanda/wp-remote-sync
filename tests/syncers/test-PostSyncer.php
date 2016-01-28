@@ -4,6 +4,39 @@ require_once __DIR__."/../../src/syncers/PostSyncer.php";
 
 class PostSyncerTest extends WP_UnitTestCase {
 
+	function test_getStructuredPostMeta() {
+		$id=wp_insert_post(array(
+			"post_title"=>"post one",
+			"post_name"=>"post-one"
+		));
+
+		add_post_meta($id,"test","testval");
+		add_post_meta($id,"testarray","first");
+		add_post_meta($id,"testarray","second");
+
+		$a=PostSyncer::getStructuredPostMeta($id);
+		$this->assertEquals($a,array(
+			array("key"=>"test","value"=>"testval"),
+			array("key"=>"testarray","value"=>"first"),
+			array("key"=>"testarray","value"=>"second")
+		));
+
+		PostSyncer::setPostMeta($id,array(
+			array("key"=>"testarray","value"=>"first"),
+			array("key"=>"test","value"=>"testval"),
+			array("key"=>"test","value"=>"another test val"),
+			array("key"=>"new","value"=>"newval")
+		));
+
+		$a=PostSyncer::getStructuredPostMeta($id);
+		$this->assertEquals($a,array(
+			array("key"=>"new","value"=>"newval"),
+			array("key"=>"test","value"=>"another test val"),
+			array("key"=>"test","value"=>"testval"),
+			array("key"=>"testarray","value"=>"first")
+		));
+	}
+
 	function test_ls() {
 		RemoteSyncPlugin::instance()->syncers=NULL;
 		RemoteSyncPlugin::instance()->install();

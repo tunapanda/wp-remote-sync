@@ -43,7 +43,8 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 			"post_excerpt"=>"ex",
 			"post_status"=>"published",
 			"post_parent"=>"",
-			"menu_order"=>0
+			"menu_order"=>0,
+			"meta"=>array()
 		);
 
 		$rev=md5(json_encode($data));
@@ -83,7 +84,8 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 			"post_excerpt"=>"ex",
 			"post_status"=>"published",
 			"post_parent"=>"",
-			"menu_order"=>0
+			"menu_order"=>0,
+			"meta"=>array()
 		);
 
 		$rev=md5(json_encode($data));

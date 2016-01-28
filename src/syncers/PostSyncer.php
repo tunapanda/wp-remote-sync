@@ -15,6 +15,72 @@ class PostSyncer extends AResourceSyncer {
 	}
 
 	/**
+	 * Set meta from a structured array.
+	 */
+	public static function setPostMeta($postId, $newMeta) {
+		$oldMeta=PostSyncer::getStructuredPostMeta($postId);
+
+		foreach ($oldMeta as $old) {
+			$keep=FALSE;
+
+			foreach ($newMeta as $new)
+				if ($old["key"]==$new["key"] && $old["value"]==$new["value"])
+					$keep=TRUE;
+
+			if (!$keep)
+				delete_post_meta($postId,$old["key"],$old["value"]);
+		}
+
+		foreach ($newMeta as $new) {
+			$already=FALSE;
+
+			foreach ($oldMeta as $old)
+				if ($old["key"]==$new["key"] && $old["value"]==$new["value"])
+					$already=TRUE;
+
+			if (!$already)
+				add_post_meta($postId,$new["key"],$new["value"]);
+		}
+	}
+
+	/**
+	 * Set post meta.
+	 */
+	public static function getStructuredPostMeta($postId) {
+		$meta=get_post_meta($postId);
+		$structuredMeta=array();
+
+		foreach ($meta as $key=>$value) {
+			if ($key[0]!="_") {
+				if (is_array($value)) {
+					foreach ($value as $singleValue)
+						$structuredMeta[]=array(
+							"key"=>$key,
+							"value"=>$singleValue
+						);
+				}
+
+				else {
+					$structuredMeta[]=array(
+						"key"=>$key,
+						"value"=>$value
+					);
+				}
+			}
+		}
+
+		usort($structuredMeta, function($a,$b) {
+			$v=strcmp($a["key"],$b["key"]);
+			if ($v)
+				return $v;
+
+			return strcmp($a["value"],$b["value"]);
+		});
+
+		return $structuredMeta;
+	}
+
+	/**
 	 * Get local id by slug.
 	 */
 	private function getIdBySlug($slug) {
@@ -128,14 +194,8 @@ class PostSyncer extends AResourceSyncer {
 			"post_status"=>$post->post_status,
 			"post_parent"=>$parentSlug,
 			"menu_order"=>$post->menu_order,
+			"meta"=>PostSyncer::getStructuredPostMeta($localId)
 		);
-
-/*		$metas=get_post_meta($localId);
-		$data["meta"]=array();
-
-		foreach ($metas as $key=>$value)
-			if ($key[0]!="_")
-				$data["meta"][$key]=$value;*/
 
 		return $data;
 	}
@@ -158,6 +218,8 @@ class PostSyncer extends AResourceSyncer {
 		$post->post_status=$data["post_status"];
 		$post->post_parent=$this->getIdBySlug($data["post_parent"]);
 		$post->menu_order=$data["menu_order"];
+
+		PostSyncer::setPostMeta($localId,$data["meta"]);
 
 		wp_update_post($post);
 	}
@@ -199,6 +261,8 @@ class PostSyncer extends AResourceSyncer {
 			"post_parent"=>$this->getIdBySlug($data["post_parent"]),
 			"menu_order"=>$data["menu_order"]
 		));
+
+		PostSyncer::setPostMeta($localId,$data["meta"]);
 
 		$post=get_post($localId);
 
