@@ -57,7 +57,8 @@ class AttachmentSyncer extends AResourceSyncer {
 		$posts=$q->get_posts();
 
 		foreach ($posts as $post) {
-			$slugs[]=$post->post_name;
+			if ($post->post_name)
+				$slugs[]=$post->post_name;
 		}
 
 		return $slugs;

@@ -42,7 +42,7 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 			"post_content"=>"hello",
 			"post_excerpt"=>"ex",
 			"post_status"=>"published",
-			"post_parent"=>NULL,
+			"post_parent"=>"",
 			"menu_order"=>0
 		);
 
@@ -82,7 +82,7 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 			"post_content"=>"some new content",
 			"post_excerpt"=>"ex",
 			"post_status"=>"published",
-			"post_parent"=>NULL,
+			"post_parent"=>"",
 			"menu_order"=>0
 		);
 

@@ -62,7 +62,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"post_title"=>"title",
 			"post_excerpt"=>"ex",
 			"post_status"=>"published",
-			"post_parent"=>NULL,
+			"post_parent"=>"",
 			"menu_order"=>0
 		);
 
@@ -133,7 +133,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"post_title"=>"title",
 			"post_excerpt"=>"ex",
 			"post_status"=>"published",
-			"post_parent"=>NULL,
+			"post_parent"=>"",
 			"menu_order"=>0
 		);
 
@@ -148,7 +148,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"slug"=>"some-slug"
 		));
 
-		$this->assertEquals("15e97601f967ac0b60bac747657ec57c",$resData["revision"]);
+		$this->assertEquals("402486f5f8288a3cbf64777c577e9a55",$resData["revision"]);
 
 		$data["post_content"]="some new content";
 
@@ -170,7 +170,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 		$api->put(array(
 			"slug"=>"some-slug",
 			"type"=>"post",
-			"baseRevision"=>"15e97601f967ac0b60bac747657ec57c",
+			"baseRevision"=>"402486f5f8288a3cbf64777c577e9a55",
 			"data"=>json_encode($data)
 		));
 

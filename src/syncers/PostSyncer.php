@@ -77,6 +77,7 @@ class PostSyncer extends AResourceSyncer {
 
 	/**
 	 * List current local resources.
+	 * We will silently skip posts without a slug (they are probably drafts (?)).
 	 */
 	public function listResourceSlugs() {
 		$slugs=array();
@@ -89,8 +90,10 @@ class PostSyncer extends AResourceSyncer {
 		$posts=$q->get_posts();
 
 		foreach ($posts as $post) {
-			if ($post->post_type=="page" || $post->post_type=="post")
-				$slugs[]=$post->post_name;
+			if ($post->post_type=="page" || $post->post_type=="post") {
+				if ($post->post_name)
+					$slugs[]=$post->post_name;
+			}
 		}
 
 		return $slugs;
@@ -109,6 +112,10 @@ class PostSyncer extends AResourceSyncer {
 		if ($post->post_status=="trash")
 			return NULL;
 
+		$parentSlug=$this->getSlugById($post->post_parent);
+		if (!$parentSlug)
+			$parentSlug="";
+
 		return array(
 			"post_name"=>$post->post_name,
 			"post_title"=>$post->post_title,
@@ -116,7 +123,7 @@ class PostSyncer extends AResourceSyncer {
 			"post_content"=>$post->post_content,
 			"post_excerpt"=>$post->post_excerpt,
 			"post_status"=>$post->post_status,
-			"post_parent"=>$this->getSlugById($post->post_parent),
+			"post_parent"=>$parentSlug,
 			"menu_order"=>$post->menu_order,
 		);
 	}
@@ -147,10 +154,30 @@ class PostSyncer extends AResourceSyncer {
 	 * Create a local resource.
 	 */
 	function createResource($slug, $data) {
+		global $wpdb;
+
+		if (!$slug)
+			throw new Exception("Tried to create post with empty slug!");
+
 		if ($data["post_name"]!=$slug)
 			throw new Exception("Sanity check failed, slug!=name");
 
-		return wp_insert_post(array(
+		// Check if it exists in trash, if so delete permanently,
+		// because we need the slug to be free.
+		$q=$wpdb->prepare("SELECT * FROM {$wpdb->prefix}posts WHERE post_name=%s",$slug);
+		$row=$wpdb->get_row($q);
+		if ($wpdb->last_error)
+			throw new Exception($wpdb->last_error);
+
+		if ($row) {
+			if ($row->post_status=="trash")
+				wp_delete_post($row->ID,TRUE);
+
+			else
+				throw new Exception("Slug not free, status=".$row->post_status);
+		}
+
+		$localId=wp_insert_post(array(
 			"post_name"=>$slug,
 			"post_title"=>$data["post_title"],
 			"post_type"=>$data["post_type"],
@@ -160,6 +187,13 @@ class PostSyncer extends AResourceSyncer {
 			"post_parent"=>$this->getIdBySlug($data["post_parent"]),
 			"menu_order"=>$data["menu_order"]
 		));
+
+		$post=get_post($localId);
+
+		if ($post->post_name!=$slug)
+			throw new Exception("Slug changed when saving: original: ".$slug);
+
+		//return $localId;
 	}
 
 	/**
@@ -167,6 +201,6 @@ class PostSyncer extends AResourceSyncer {
 	 */
 	function deleteResource($slug) {
 		$localId=$this->getIdBySlug($slug);
-		wp_trash_post($localId);
+		wp_delete_post($localId,TRUE);
 	}
 }

@@ -267,11 +267,21 @@ class SyncResource extends SmartRecord {
 	 * Compare resource weight.
 	 */
 	private static function cmpResourceWeight($a, $b) {
-		if (!isset($a->__weight))
-			$a->__weight=$a->getSyncer()->getResourceWeight($a->getSlug());
+		if (!isset($a->__weight)) {
+			if ($a->getData())
+				$a->__weight=$a->getSyncer()->getResourceWeight($a->getSlug());
 
-		if (!isset($b->__weight))
-			$b->__weight=$b->getSyncer()->getResourceWeight($b->getSlug());
+			else
+				$a->__weight="";
+		}
+
+		if (!isset($b->__weight)) {
+			if ($b->getData())
+				$b->__weight=$b->getSyncer()->getResourceWeight($b->getSlug());
+
+			else
+				$b->__weight="";
+		}
 
 		return strcmp($a->__weight,$b->__weight);
 	}
@@ -337,16 +347,27 @@ class SyncResource extends SmartRecord {
 	 * Create local resource with remote data.
 	 */
 	function createLocalResource() {
-		$this->getSyncer()->createResource(
-			$this->getRemoteResource()->getSlug(),
-			$this->getRemoteResource()->getData()
-		);
+		$slug=$this->getRemoteResource()->getSlug();
+
+		$localId=$this->getSyncer()->createResource($slug,$this->getRemoteResource()->getData());
 
 		$this->localDataFetched=FALSE;
 		$this->baseRevision=$this->getLocalRevision();
 
-		if ($this->getRemoteRevision()!=$this->getLocalRevision())
-			throw new Exception("Local revision differ from remote after create");
+		if ($this->getRemoteRevision()!=$this->getLocalRevision()) {
+			$logger=RemoteSyncPlugin::instance()->getLogger();
+			if ($logger) {
+				$logger->log("**** Tried to save, but that changed the revision, slug=".$slug);
+				$logger->log("**** Remote:");
+				$logger->log(json_encode($this->getRemoteResource()->getData(),JSON_PRETTY_PRINT));
+				$logger->log("**** Local:");
+				$logger->log(json_encode($this->getData(),JSON_PRETTY_PRINT));
+			}
+
+			$this->getSyncer()->deleteResource($slug);
+
+			throw new Exception($slug.": Local revision differ from remote after create.");
+		}
 	}
 
 	/**

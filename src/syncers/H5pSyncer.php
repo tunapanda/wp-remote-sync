@@ -94,12 +94,7 @@ class H5pSyncer extends AResourceSyncer {
 		if (!file_exists($attachmentDir))
 			return array();
 
-		$res=array();
-		$allfiles=$this->scandirRecursive($attachmentDir);
-		foreach ($allfiles as $file)
-			$res[]="h5p/content/{id}/$file";
-
-		return $res;
+		return $this->scandirRecursive($attachmentDir);
 	}
 
 	/**
@@ -338,7 +333,7 @@ class H5pSyncer extends AResourceSyncer {
 	function createResource($slug, $data) {
 		global $wpdb;
 
-		if (!$slug || $data["slug"]!=$slug)
+		if (/*!$slug || */$data["slug"]!=$slug)
 			throw new Exception("sanity test failed, slug!=slug");
 
 		$library=$data["library"];
