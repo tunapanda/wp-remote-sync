@@ -43,7 +43,7 @@ class H5PSyncerTest extends WP_UnitTestCase {
 		$attachments=$h5pSyncer->getResourceAttachments("test-slug");
 
 		$this->assertEquals(1,sizeof($attachments));
-		$this->assertEquals($attachments[0],"h5p/content/{id}/images/test.txt");
+		$this->assertEquals($attachments[0],"images/test.txt");
 	}
 
 	function test_getResourceSlugs() {

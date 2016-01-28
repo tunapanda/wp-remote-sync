@@ -119,7 +119,7 @@ class PostSyncer extends AResourceSyncer {
 		if (!$parentSlug)
 			$parentSlug="";
 
-		return array(
+		$data=array(
 			"post_name"=>$post->post_name,
 			"post_title"=>$post->post_title,
 			"post_type"=>$post->post_type,
@@ -129,6 +129,15 @@ class PostSyncer extends AResourceSyncer {
 			"post_parent"=>$parentSlug,
 			"menu_order"=>$post->menu_order,
 		);
+
+/*		$metas=get_post_meta($localId);
+		$data["meta"]=array();
+
+		foreach ($metas as $key=>$value)
+			if ($key[0]!="_")
+				$data["meta"][$key]=$value;*/
+
+		return $data;
 	}
 
 	/**
