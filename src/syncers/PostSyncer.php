@@ -20,6 +20,9 @@ class PostSyncer extends AResourceSyncer {
 	private function getIdBySlug($slug) {
 		global $wpdb;
 
+		if (!$slug)
+			return 0;
+
 		$q=$wpdb->prepare("SELECT ID FROM {$wpdb->prefix}posts WHERE post_name=%s",$slug);
 		$id=$wpdb->get_var($q);
 
