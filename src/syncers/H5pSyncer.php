@@ -49,7 +49,8 @@ class H5pSyncer extends AResourceSyncer {
 
 		$res=array();
 		foreach ($slugs as $slug)
-			$res[]=$slug;
+			if ($slug)
+				$res[]=$slug;
 
 		return $res;
 	}
