@@ -120,7 +120,10 @@ class RemoteResource {
 		$remoteResources=[];
 
 		foreach ($infos as $info) {
-			//print_r($info);
+			/*$logger=RemoteSyncPlugin::instance()->getLogger();
+			if ($logger)
+				$logger->log(print_r($info,TRUE));*/
+
 			$remoteResource=new RemoteResource($type,$info["slug"],$info["revision"]);
 			$remoteResources[]=$remoteResource;
 		}

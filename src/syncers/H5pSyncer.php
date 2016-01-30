@@ -47,7 +47,11 @@ class H5pSyncer extends AResourceSyncer {
 		if ($wpdb->last_error)
 			throw new Exception($wpdb->last_error);
 
-		return $slugs;
+		$res=array();
+		foreach ($slugs as $slug)
+			$res[]=$slug;
+
+		return $res;
 	}
 
 	/**

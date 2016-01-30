@@ -23,6 +23,7 @@ class RemoteSyncOperations {
 	public function handleException($exception) {
 		$this->log("** Error **");
 		$this->log($exception->getMessage());
+		$this->log($exception->getTraceAsString());
 
 		RemoteSyncPlugin::instance()->getLogger()->done();
 		exit();
