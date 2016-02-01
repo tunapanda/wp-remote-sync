@@ -119,6 +119,9 @@ class RemoteSyncPlugin extends Singleton {
 		if ($percent)
 			$percent.="%";
 
+		else
+			$percent="";
+
 		$this->logger->status($this->remoteCallStatus." ".$percent);
 	}
 

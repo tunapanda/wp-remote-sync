@@ -327,7 +327,7 @@ class H5pSyncer extends AResourceSyncer {
 		foreach ($data["libraries"] as $libraryData)
 			$this->ensureDependency($localId,$libraryData);
 
-		$saved=$this->getResource($localId);
+		$saved=$this->getResource($slug);
 		if ($saved!==$data) {
 
 			throw new Exception(
