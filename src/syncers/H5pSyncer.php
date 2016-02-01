@@ -328,8 +328,16 @@ class H5pSyncer extends AResourceSyncer {
 			$this->ensureDependency($localId,$libraryData);
 
 		$saved=$this->getResource($localId);
-		if ($saved!==$data)
-			throw new Exception("update: the data in the db is not what we saved!");
+		if ($saved!==$data) {
+
+			throw new Exception(
+				"**** data:\n".
+				json_encode($data)."\n".
+				"**** saved:\n".
+				json_encode($saved)."\n".
+				"update: the data in the db is not what we saved!"
+			);
+		}
 	}
 
 	/**
