@@ -54,7 +54,7 @@ class RemoteSyncApi {
 		$syncResources=
 			SyncResource::findAllForType(
 				$args["type"],
-				SyncResource::POPULATE_LOCAL
+				SyncResource::POPULATE_LOCAL|SyncResource::ONLY_LOCAL_EXISTING
 			);
 
 		$res=array();

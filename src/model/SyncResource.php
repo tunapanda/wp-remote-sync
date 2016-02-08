@@ -9,6 +9,7 @@ class SyncResource extends SmartRecord {
 
 	const POPULATE_LOCAL=1;
 	const POPULATE_REMOTE=2;
+	const ONLY_LOCAL_EXISTING=4;
 
 	const NEW_LOCAL=1;
 	const NEW_REMOTE=2;
@@ -331,6 +332,19 @@ class SyncResource extends SmartRecord {
 
 			foreach ($syncResources as $syncResource)
 				$syncResource->remoteResourceSet=TRUE;
+		}
+
+		if ($findFlags&SyncResource::ONLY_LOCAL_EXISTING) {
+			if ($findFlags&SyncResource::POPULATE_REMOTE)
+				throw new Exception("Can't use POPULATE_REMOTE and ONLY_LOCAL_EXISTING at the same time");
+
+			$tmp=$syncResources;
+			$syncResources=array();
+
+			foreach ($tmp as $syncResource) {
+				if ($syncResource->getLocalRevision())
+					$syncResources[]=$syncResource;
+			}
 		}
 
 		return $syncResources;
