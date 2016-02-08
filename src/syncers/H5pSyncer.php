@@ -289,6 +289,62 @@ class H5pSyncer extends AResourceSyncer {
 	}
 
 	/**
+	 * Remove old libraries.
+	 */
+	private function removeOldDependencies($h5pId, $libraryDatas) {
+		global $wpdb;
+
+		$used=array();
+		foreach ($libraryDatas as $libraryData)
+			$used[]=
+				$libraryData["name"]."|".
+				$libraryData["dependency_type"]."|".
+				$libraryData["major_version"]."|".
+				$libraryData["minor_version"]."|".
+				$libraryData["patch_version"];
+
+		$q=$wpdb->prepare(
+			"SELECT     * ".
+			"FROM       {$wpdb->prefix}h5p_contents_libraries AS cl ".
+			"LEFT JOIN  {$wpdb->prefix}h5p_libraries AS l ".
+			"ON         cl.library_id=l.id ".
+			"WHERE      cl.content_id=%s",
+			$h5pId
+		);
+
+		$res=$wpdb->get_results($q,ARRAY_A);
+
+		if ($wpdb->last_error)
+			throw new Exception($wpdb->last_error);
+
+		foreach ($res as $libraryData) {
+			$useEntry=
+				$libraryData["name"]."|".
+				$libraryData["dependency_type"]."|".
+				$libraryData["major_version"]."|".
+				$libraryData["minor_version"]."|".
+				$libraryData["patch_version"];
+
+			if (!in_array($useEntry,$used)) {
+				$q=$wpdb->prepare(
+					"DELETE FROM {$wpdb->prefix}h5p_contents_libraries ".
+					"WHERE      content_id=%s ".
+					"AND        library_id=%s ".
+					"AND        dependency_type=%s",
+					$libraryData["content_id"],
+					$libraryData["library_id"],
+					$libraryData["dependency_type"]
+				);
+
+				$res=$wpdb->query($q);
+
+				if ($wpdb->last_error)
+					throw new Exception($wpdb->last_error);
+			}
+		}
+	}
+
+	/**
 	 * Update a local resource with data.
 	 */
 	public function updateResource($slug, $data) {
@@ -326,6 +382,8 @@ class H5pSyncer extends AResourceSyncer {
 
 		foreach ($data["libraries"] as $libraryData)
 			$this->ensureDependency($localId,$libraryData);
+
+		$this->removeOldDependencies($localId,$data["libraries"]);
 
 		$saved=$this->getResource($slug);
 		if ($saved!==$data) {
@@ -390,12 +448,20 @@ class H5pSyncer extends AResourceSyncer {
 			throw $e;
 		}
 
+		$this->removeOldDependencies($localId,$data["libraries"]);
+
 		$saved=$this->getResource($slug);
 		if ($saved!==$data) {
-			echo "in local db=".sizeof($saved["libraries"])." incoming=".sizeof($data["libraries"])."<br>";
+			//echo "in local db=".sizeof($saved["libraries"])." incoming=".sizeof($data["libraries"])."<br>";
 
 			$this->deleteResource($localId);
-			throw new Exception("create: the data in the db is not what we saved!");
+			throw new Exception(
+				"**** data:\n".
+				json_encode($data)."\n".
+				"**** saved:\n".
+				json_encode($saved)."\n".
+				"create: the data in the db is not what we saved!"
+			);
 		}
 
 		return $localId;
@@ -405,7 +471,7 @@ class H5pSyncer extends AResourceSyncer {
 	 * Delete a local resource.
 	 */
 	function deleteResource($slug) {
-		$slug=$this->getIdBySlug($slug);
+		$localId=$this->getIdBySlug($slug);
 		global $wpdb;
 
 		$q=$wpdb->prepare(
