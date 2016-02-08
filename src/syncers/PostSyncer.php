@@ -160,7 +160,7 @@ class PostSyncer extends AResourceSyncer {
 
 		foreach ($posts as $post) {
 			if ($post->post_type=="page" || $post->post_type=="post") {
-				if ($post->post_name)
+				if ($post->post_name && !in_array($post->post_status,array("trash")))
 					$slugs[]=$post->post_name;
 			}
 		}
