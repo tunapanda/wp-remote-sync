@@ -237,7 +237,7 @@ class RemoteSyncOperations {
 					case SyncResource::NEW_REMOTE:
 					case SyncResource::UPDATED_REMOTE:
 					case SyncResource::DELETED_REMOTE:
-						$this->log($syncResource->getSlug.": Remotely changed, please pull.");
+						$this->log($syncResource->getSlug().": Remotely changed, please pull.");
 						break;
 
 					case SyncResource::NEW_LOCAL:

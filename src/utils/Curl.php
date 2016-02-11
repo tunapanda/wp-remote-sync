@@ -86,11 +86,17 @@ class Curl {
 	 * Add file upload.
 	 */
 	public function addFileUpload($field, $fileName) {
-		$this->postFields[$field]=new CurlFile(
-			$fileName,
-			mime_content_type($fileName),
-			$field
-		);
+		if (class_exists("CurlFile")) {
+			$this->postFields[$field]=new CurlFile(
+				$fileName,
+				mime_content_type($fileName),
+				$field
+			);
+		}
+
+		else {
+			$this->addPostField($field,"@".$fileName);
+		}
 
 		return $this;
 	}
