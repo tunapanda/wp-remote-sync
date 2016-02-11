@@ -137,6 +137,13 @@ class Curl {
 	}
 
 	/**
+	 * Curl progress function compatible with PHP versions before 5.5
+	 */
+	private function onCurlProgressOld($totalDown, $down, $totalUp, $up) {
+		$this->onCurlProgress(NULL, $totalDown, $down, $totalUp, $up);
+	}
+
+	/**
 	 * Exec.
 	 */
 	public function exec() {
@@ -173,8 +180,14 @@ class Curl {
 		else {
 			if ($this->percentFunc) {
 				curl_setopt($this->curl,CURLOPT_NOPROGRESS,FALSE);
-				curl_setopt($this->curl,CURLOPT_PROGRESSFUNCTION,
-					array($this,"onCurlProgress"));
+
+				if (defined("PHP_VERSION_ID") && PHP_VERSION_ID>=50500)
+					curl_setopt($this->curl,CURLOPT_PROGRESSFUNCTION,
+						array($this,"onCurlProgress"));
+
+				else
+					curl_setopt($this->curl,CURLOPT_PROGRESSFUNCTION,
+						array($this,"onCurlProgressOld"));
 			}
 
 			$res=curl_exec($this->curl);
