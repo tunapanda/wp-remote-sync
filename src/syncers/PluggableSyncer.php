@@ -18,7 +18,10 @@ class PluggableSyncer extends AResourceSyncer {
 	 * Get type.
 	 */
 	public function getType() {
-		return get_class($this->impl);
+		$name=get_class($this->impl);
+		$name=str_replace("\\","-",$name);
+
+		return $name;
 	}
 
 	/**
@@ -39,7 +42,7 @@ class PluggableSyncer extends AResourceSyncer {
 	 * Update resource.
 	 */
 	public function updateResource($slug, $data) {
-		return $this->impl->updateResource($slug);
+		return $this->impl->updateResource($slug,$data);
 	}
 
 	/**
