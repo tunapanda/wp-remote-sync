@@ -145,6 +145,9 @@ class SyncResource extends SmartRecord {
 		$attachmentFileName=$attachment->getFileName();
 		$targetFileName=$this->getAttachmentDirectory()."/".$attachmentFileName;
 
+		$logger=RemoteSyncPlugin::instance()->getLogger();
+		$logger->log("Downloading to: ".$targetFileName);
+
 		$dir=dirname($targetFileName);
 		if (!is_dir($dir)) {
 			if (!mkdir($dir,0777,TRUE))

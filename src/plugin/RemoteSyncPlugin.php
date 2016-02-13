@@ -4,6 +4,7 @@ require_once __DIR__."/../utils/Singleton.php";
 require_once __DIR__."/../syncers/PostSyncer.php";
 require_once __DIR__."/../syncers/AttachmentSyncer.php";
 require_once __DIR__."/../syncers/H5pSyncer.php";
+require_once __DIR__."/../syncers/PluggableSyncer.php";
 require_once __DIR__."/../controller/RemoteSyncApi.php";
 require_once __DIR__."/../controller/RemoteSyncOperations.php";
 require_once __DIR__."/../utils/Curl.php";
@@ -44,6 +45,10 @@ class RemoteSyncPlugin extends Singleton {
 				if ($syncer->isAvailable())
 					$this->syncers[]=$syncer;
 			}
+
+			$pluggableSyncers=apply_filters("remote-syncers",array());
+			foreach ($pluggableSyncers as $pluggableSyncer)
+				$this->syncers[]=new PluggableSyncer($pluggableSyncer);
 		}
 
 		return $this->syncers;
