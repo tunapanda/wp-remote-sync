@@ -161,8 +161,17 @@ class RemoteSyncApi {
 			throw new Exception("Unable to parse json data");
 
 		$syncer=$resource->getSyncer();
+		$oldData=$syncer->getResource($resource->getSlug());
 		$syncer->updateResource($resource->getSlug(),$data);
-		$resource->processPostedAttachments();
+
+		try {
+			$resource->processPostedAttachments();
+		}
+
+		catch (Exception $e) {
+			$syncer->updateResource($resource->getSlug(),$oldData);
+			throw $e;
+		}
 
 		return array(
 			"ok"=>1

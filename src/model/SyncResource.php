@@ -208,6 +208,9 @@ class SyncResource extends SmartRecord {
 
 		$upload_base_dir=wp_upload_dir()["basedir"];
 
+		if (sizeof($_FILES)==ini_get("max_file_uploads"))
+			throw new Exception("Too many attached files, max_file_uploads=".ini_get("max_file_uploads"));
+
 		foreach ($_FILES as $uploadedFile) {
 			if ($uploadedFile["error"])
 				throw new Exception("Unable to process uploaded file: ".$uploadedFile["error"]);
