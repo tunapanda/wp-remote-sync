@@ -211,13 +211,15 @@ class SyncResource extends SmartRecord {
 		if (sizeof($_FILES)==ini_get("max_file_uploads"))
 			throw new Exception("Too many attached files, max_file_uploads=".ini_get("max_file_uploads"));
 
-		foreach ($_FILES as $uploadedFile) {
+		error_log("files: ".print_r($_FILES,TRUE));
+
+		foreach ($_FILES as $field=>$uploadedFile) {
 			if ($uploadedFile["error"])
 				throw new Exception("Unable to process uploaded file: ".$uploadedFile["error"]);
 
-			$fileName=urldecode($uploadedFile["name"]);
+			//$fileName=urldecode($uploadedFile["name"]);
+			$fileName=urldecode($field);
 			$targetFileName=$this->getAttachmentDirectory()."/".$fileName;
-			//echo "processing: $targetFileName\n";
 
 			$dir=dirname($targetFileName);
 
@@ -482,8 +484,13 @@ class SyncResource extends SmartRecord {
 		foreach ($this->getAttachments() as $attachment) {
 			if (!$this->isRemoteAttachmentCurrent($attachment)) {
 				$logger->log("Uploading: ".$attachment->getFileName());
+
+				$encodedName=urlencode($attachment->getFileName());
+				$encodedName=str_replace('.','%2E',$encodedName);
+				$encodedName=str_replace('-','%2D',$encodedName);
+
 				$call->addFileUpload(
-					urlencode($attachment->getFileName()),
+					$encodedName,
 					$this->getAttachmentDirectory()."/".$attachment->getFileName()
 				);
 			}
