@@ -1,5 +1,5 @@
 # wp-remote-sync
-Sync content with a remote wordpress site in a similar way to a distributed version control system.As of now it works to synchronize various content types which include; posts, attachments and H5P. 
+This plugin synchronises content with a remote wordpress site in a similar way to a distributed version control system.As of now it works to synchronize various resource types which include; posts, attachments and H5P. 
 
 ## Setup
 * Install the plugin in both local and remote wordpress instances.
@@ -10,7 +10,7 @@ Sync content with a remote wordpress site in a similar way to a distributed vers
 
 
 ## How it works
-Synchronisation is user driven and all operations are handled from the local endpoint. From the local instance, you can do operateins similar to those git provides, i.e. push, pull, etc. For any given operation, synchronisation happens for all resources. 
+Synchronisation is user driven and all operations are handled from the local endpoint. The user can do operations similar to those git provides, i.e. push, pull, etc. For any given operation, synchronisation happens for all resources. 
 
 ## Work in progress
 Works, but could use more testing...
