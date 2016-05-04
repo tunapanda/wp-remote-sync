@@ -1,8 +1,14 @@
 # wp-remote-sync
-Sync content with a remote wordpress site in a similar way to a distributed version control system.
+Sync content with a remote wordpress site in a similar way to a distributed version control system.As of now it works to synchronize various content types which include; posts, attachments and H5P. 
+
+## Setup
+* Install the plugin in both local and remote wordpress instances.
+* After installation you should now be able to navigate settings>Remote sync in the admin menu.
+* Set up the access key (if it is not already set). 
+* Side note: The access key set in <a href="http://learning.tunapanda.org">learning.tunapanda.org</a> is Tunapanda1123.
+
 
 ## How it works
-
 * Set this plugin up in two different wordpress instances.
 * One is the "remote", this one doesn't need any settings at all.
 * One is the "local", this one should be set up to point at the remote.
