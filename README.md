@@ -4,22 +4,18 @@ Sync content with a remote wordpress site in a similar way to a distributed vers
 ## Setup
 * Install the plugin in both local and remote wordpress instances.
 * After installation you should now be able to navigate settings>Remote sync in the admin menu.
-* Set up the access key (if it is not already set). 
+* From the remote instance set the access key (if it is not already set). 
 * Side note: The access key set in <a href="http://learning.tunapanda.org">learning.tunapanda.org</a> is Tunapanda1123.
+* From the local instance, set both the remote url and the access key (Must match the remote key).
 
 
 ## How it works
-* Set this plugin up in two different wordpress instances.
-* One is the "remote", this one doesn't need any settings at all.
-* One is the "local", this one should be set up to point at the remote.
-* From the local instance, you can do operateins similar to those git provides, i.e. push, pull, etc.
+Synchronisation is user driven and all operations are handled from the local endpoint. From the local instance, you can do operateins similar to those git provides, i.e. push, pull, etc. For any given operation, synchronisation happens for all resources. 
 
 ## Work in progress
-
 Works, but could use more testing...
 
 ## Hacking
-
 * TDD rocks!
   Install wordpress testsuite with `. ./bin/install-wp-tests-local.sh`
 * It uses [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). If you clone the repository, you need to do so using any of these methods:
