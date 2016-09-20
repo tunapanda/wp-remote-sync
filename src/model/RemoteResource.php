@@ -117,7 +117,7 @@ class RemoteResource {
 			->addPostField("type",$type)
 			->exec();
 
-		$remoteResources=[];
+		$remoteResources=array();
 
 		foreach ($infos as $info) {
 			/*$logger=RemoteSyncPlugin::instance()->getLogger();
