@@ -213,7 +213,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 
 		update_post_meta($id,"_wp_attached_file","helloworld");
 
-		file_put_contents(wp_upload_dir()["basedir"]."/helloworld","content");
+		$upload_dir_info=wp_upload_dir();
+		file_put_contents($upload_dir_info["basedir"]."/helloworld","content");
 
 		$syncer=RemoteSyncPlugin::instance()->getSyncerByType("attachment");
 		$attachments=$syncer->getResourceAttachments("test-attachment");
