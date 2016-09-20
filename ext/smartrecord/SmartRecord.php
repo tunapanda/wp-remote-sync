@@ -157,11 +157,12 @@ if (!class_exists("SmartRecord")) {
 		 */
 		private function getPrimaryKeyValue() {
 			$conf=self::$classes[get_called_class()];
+			$primaryKeyField=$conf["primaryKey"];
 
-			if (!isset($this->$conf["primaryKey"]))
+			if (!isset($this->$primaryKeyField))
 				return NULL;
 
-			return $this->$conf["primaryKey"];
+			return $this->$primaryKeyField;
 		}
 
 		/**
@@ -212,8 +213,10 @@ if (!class_exists("SmartRecord")) {
 
 			$statement=self::query($s,$params);
 
-			if (!$this->getPrimaryKeyValue())
-				$this->$conf["primaryKey"]=self::lastInsertId();
+			if (!$this->getPrimaryKeyValue()) {
+				$primaryKeyField=$conf["primaryKey"];
+				$this->$primaryKeyField=self::lastInsertId();
+			}
 		}
 
 		/**
@@ -233,7 +236,8 @@ if (!class_exists("SmartRecord")) {
 				)
 			);
 
-			unset($this->$conf["primaryKey"]);
+			$primaryKeyField=$conf["primaryKey"];
+			unset($this->$primaryKeyField);
 		}
 
 		/**

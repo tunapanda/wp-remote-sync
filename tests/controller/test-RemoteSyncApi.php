@@ -30,7 +30,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 
 		$this->assertCount(1,$syncResources);
 		$this->assertEquals(NULL,$syncResources[0]->id);
-		$syncResources[0]->save();
+		$res0=$syncResources[0];
+		$res0->save();
 		$this->assertNotEquals(NULL,$syncResources[0]->id);
 
 		wp_trash_post($id);

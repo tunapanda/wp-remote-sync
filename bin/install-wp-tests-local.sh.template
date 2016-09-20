@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+#
+# How to use this file:
+#
+# 1. Make a copy of this file and call it install-wp-tests-local.sh
+# 2. Replace PUT_DATABASE_USER_HERE and PUT_DATABASE_PASS_HERE with
+#    the values corresponding to your system
+# 3. Run this file from the project root with the command:
+#    . ./bin/install-wp-tests-local.sh
+#    Note the initial dot! This is because the file sets up some environment
+#    variables that we want to keep in our shell environemnt.
+# 4. Run the tests with:
+#    phpunit
+#
+
+
+export WP_TESTS_DIR=`pwd`/tests/wordpress-tests-lib/
+export WP_CORE_DIR=`pwd`/tests/wordpress/
+./bin/install-wp-tests.sh wptest PUT_DATABASE_USER_HERE PUT_DATABASE_PASS_HERE

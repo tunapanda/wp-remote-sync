@@ -211,7 +211,7 @@ class SyncResource extends SmartRecord {
 		if (sizeof($_FILES)==ini_get("max_file_uploads"))
 			throw new Exception("Too many attached files, max_file_uploads=".ini_get("max_file_uploads"));
 
-		error_log("files: ".print_r($_FILES,TRUE));
+		//error_log("files: ".print_r($_FILES,TRUE));
 
 		foreach ($_FILES as $field=>$uploadedFile) {
 			if ($uploadedFile["error"])
