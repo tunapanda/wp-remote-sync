@@ -72,7 +72,9 @@ abstract class AResourceSyncer {
 	 * Get local folder where attachments for this resource should be saved.
 	 */
 	function getAttachmentDirectory($slug) {
-		return wp_upload_dir()["basedir"];
+		$upload_dir_info=wp_upload_dir();
+
+		return $upload_dir_info["basedir"];
 	}
 
 	/**
