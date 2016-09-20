@@ -76,8 +76,10 @@ class PluggableSyncer extends AResourceSyncer {
 	 * Directory.
 	 */
 	function getAttachmentDirectory($slug) {
-		if (!method_exists($this->impl,"getAttachmentDirectory"))
-			return wp_upload_dir()["basedir"];
+		if (!method_exists($this->impl,"getAttachmentDirectory")) {
+			$upload_dir_info=wp_upload_dir();
+			return $upload_dir_info["basedir"];
+		}
 
 		return $this->impl->getAttachmentDirectory($slug);
 	}

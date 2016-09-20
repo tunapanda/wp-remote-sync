@@ -206,7 +206,8 @@ class SyncResource extends SmartRecord {
 		if (!isset($this->slug))
 			throw new Exception("Can't process attachments, no slug");
 
-		$upload_base_dir=wp_upload_dir()["basedir"];
+		$upload_dir_info=wp_upload_dir();
+		$upload_base_dir=$upload_dir_info["basedir"];
 
 		if (sizeof($_FILES)==ini_get("max_file_uploads"))
 			throw new Exception("Too many attached files, max_file_uploads=".ini_get("max_file_uploads"));

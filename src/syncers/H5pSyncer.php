@@ -93,7 +93,8 @@ class H5pSyncer extends AResourceSyncer {
 		if (!$localId)
 			throw new Exception("getResourceAttachments: H5P doesn't exist: ".$slug);
 
-		$uploadBasedir=wp_upload_dir()["basedir"];
+		$upload_dir_info=wp_upload_dir();
+		$uploadBasedir=$upload_dir_info["basedir"];
 		$attachmentDir=$uploadBasedir."/h5p/content/$localId/";
 
 		if (!file_exists($attachmentDir))
@@ -504,6 +505,7 @@ class H5pSyncer extends AResourceSyncer {
 		if (!$localId)
 			throw new Exception("H5P not found for attachments dir: $slug");
 
-		return wp_upload_dir()["basedir"]."/h5p/content/".$localId."/";
+		$upload_dir_info=wp_upload_dir();
+		return $upload_dir_info["basedir"]."/h5p/content/".$localId."/";
 	}
 }
