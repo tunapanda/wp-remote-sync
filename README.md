@@ -1,4 +1,4 @@
-# wp-remote-sync
+# wp-remote-sync [![Build Status](https://travis-ci.org/tunapanda/wp-remote-sync.svg?branch=master)](https://travis-ci.org/tunapanda/wp-remote-sync)
 This plugin synchronises content with a remote wordpress site in a similar way to a distributed version control system.As of now it works to synchronize various resource types which include; posts, attachments and H5P. 
 
 ## Setup
