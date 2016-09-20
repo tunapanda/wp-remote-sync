@@ -1,5 +1,5 @@
 # wp-remote-sync [![Build Status](https://travis-ci.org/tunapanda/wp-remote-sync.svg?branch=master)](https://travis-ci.org/tunapanda/wp-remote-sync)
-This plugin synchronises content with a remote wordpress site in a similar way to a distributed version control system.As of now it works to synchronize various resource types which include; posts, attachments and H5P. 
+This plugin synchronises content with a remote wordpress site in a similar way to a distributed version control system. As of now it works to synchronize various resource types which include; posts, attachments and H5P. 
 
 ## Setup
 * Install the plugin in both local and remote wordpress instances.
@@ -13,12 +13,9 @@ This plugin synchronises content with a remote wordpress site in a similar way t
 Synchronisation is user driven and all operations are handled from the local endpoint. The user can do operations similar to those git provides, i.e. push, pull, etc. 
 
 ## Work in progress
-Works, but could use more testing....
+Has been known to work on occasion... Needs more testing...
 
 ## Hacking
 * TDD rocks!
-  Install wordpress testsuite with `. ./bin/install-wp-tests-local.sh`
-* It uses [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). If you clone the repository, you need to do so using any of these methods:
-    1. You can clone it using `git clone --recusrive`.
-    2. You can clone it without `--recursive`, and after do `git submodule init` and `git submodule update` inside the
-       cloned folder.
+  Check the file `bin/install-wp-tests-local.sh.template` for instructions on how to set this up.
+* We use [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). However, the submodule references live in the `submodules` directory, but they are also copied and checked in to the `ext` directory. Our code relies on the files in the `ext` directory, so this means you don't have to initialize the submodules. It also means that we shouldn't change the files in the `ext` directory, but rather change the corresponding submodule and copy it in again. 
