@@ -13,7 +13,7 @@ This plugin synchronises content with a remote wordpress site in a similar way t
 Synchronisation is user driven and all operations are handled from the local endpoint. The user can do operations similar to those git provides, i.e. push, pull, etc. 
 
 ## Work in progress
-Works, but could use more testing...
+Works, but could use more testing....
 
 ## Hacking
 * TDD rocks!
