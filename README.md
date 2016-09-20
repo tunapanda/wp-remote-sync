@@ -17,5 +17,5 @@ Has been known to work on occasion... Needs more testing...
 
 ## Hacking
 * TDD rocks!
-  Check the file `bin/install-wp-tests-local.sh.template` for instructions on how to set this up.
+  Check the file `bin/install-wp-tests-local.sh.template` for instructions on how to set this up. There is also a [Travis CI](https://travis-ci.org/tunapanda/wp-remote-sync/builds/) job set up to run tests on commits to master.
 * We use [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). However, the submodule references live in the `submodules` directory, but they are also copied and checked in to the `ext` directory. Our code relies on the files in the `ext` directory, so this means you don't have to initialize the submodules. It also means that we shouldn't change the files in the `ext` directory, but rather change the corresponding submodule and copy it in again. 
