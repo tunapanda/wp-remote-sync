@@ -70,7 +70,8 @@ class H5PSyncerTest extends WP_UnitTestCase {
 
 		$id=$wpdb->insert_id;
 
-		$uploadBasedir=wp_upload_dir()["basedir"];
+		$upload_dir_info=wp_upload_dir();
+		$uploadBasedir=$upload_dir_info["basedir"];
 		if (!file_exists($uploadBasedir."/h5p/content/{$id}/images/"))
 			mkdir($uploadBasedir."/h5p/content/{$id}/images/",0777,TRUE);
 

@@ -89,7 +89,8 @@ class SyncResourceTest extends WP_UnitTestCase {
 		$this->assertEquals(1,sizeof($syncResources));
 		$syncResource=$syncResources[0];
 
-		$upload_base_dir=wp_upload_dir()["basedir"];
+		$upload_dir_info=wp_upload_dir();
+		$upload_base_dir=$upload_dir_info["basedir"];
 		if (file_exists($upload_base_dir."/h5p/content/777//an/attached/file.txt"))
 			unlink($upload_base_dir."/h5p/content/777//an/attached/file.txt");
 
@@ -117,7 +118,8 @@ class SyncResourceTest extends WP_UnitTestCase {
 		$syncResource=SyncResource::findOneForType("attachment","the-slug");
 		$this->assertEquals($syncResource->slug,"the-slug");
 
-		$upload_base_dir=wp_upload_dir()["basedir"];
+		$upload_dir_info=wp_upload_dir();
+		$upload_base_dir=$upload_dir_info["basedir"];
 		if (file_exists($upload_base_dir."/here/it/is.txt"))
 			unlink($upload_base_dir."/here/it/is.txt");
 
@@ -133,7 +135,8 @@ class SyncResourceTest extends WP_UnitTestCase {
 
 		$syncResource->processPostedAttachments();
 
-		$upload_base_dir=wp_upload_dir()["basedir"];
+		$upload_dir_info=wp_upload_dir();
+		$upload_base_dir=$upload_dir_info["basedir"];
 		$f=file_get_contents($upload_base_dir."/here/it/is.txt");
 		$this->assertEquals($f,"hello world");
 	}*/
