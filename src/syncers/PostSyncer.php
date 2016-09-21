@@ -89,7 +89,11 @@ class PostSyncer extends AResourceSyncer {
 		if (!$slug)
 			return 0;
 
-		$q=$wpdb->prepare("SELECT ID FROM {$wpdb->prefix}posts WHERE post_name=%s",$slug);
+		$q=$wpdb->prepare(
+			"SELECT ID ".
+			"FROM   {$wpdb->prefix}posts ".
+			"WHERE  post_name=%s ".
+			"AND    post_status NOT IN ('trash','inherit')",$slug);
 		$id=$wpdb->get_var($q);
 
 		if ($wpdb->last_error)
@@ -160,8 +164,11 @@ class PostSyncer extends AResourceSyncer {
 
 		foreach ($posts as $post) {
 			if ($post->post_type=="page" || $post->post_type=="post") {
-				if ($post->post_name && !in_array($post->post_status,array("trash")))
+				if ($post->post_name && !in_array($post->post_status,array("trash","inherit"))) {
+					//echo $post->post_name." ".$post->post_status."\n";
+
 					$slugs[]=$post->post_name;
+				}
 			}
 		}
 
@@ -178,7 +185,7 @@ class PostSyncer extends AResourceSyncer {
 		if (!$post)
 			return NULL;
 
-		if ($post->post_status=="trash")
+		if ($post->post_status=="trash" || $post->post_status=="inherit")
 			return NULL;
 
 		$parentSlug=$this->getSlugById($post->post_parent);
@@ -244,7 +251,7 @@ class PostSyncer extends AResourceSyncer {
 			throw new Exception($wpdb->last_error);
 
 		if ($row) {
-			if ($row->post_status=="trash")
+			if ($row->post_status=="trash" || $row->post_status=="inherit")
 				wp_delete_post($row->ID,TRUE);
 
 			else
