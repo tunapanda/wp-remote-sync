@@ -12,12 +12,22 @@
 			 * Bootstrap from inside a plugin.
 			 */
 			public static function getWpLoadPath() {
-				$path=$_SERVER['SCRIPT_FILENAME'];
+				if (php_sapi_name()=="cli")
+					$path=$_SERVER["PWD"];
 
-				for ($i=0; $i<4; $i++)
+				else
+					$path=$_SERVER['SCRIPT_FILENAME'];
+
+				while (1) {
+					if (file_exists($path."/wp-load.php"))
+						return $path."/wp-load.php";
+
+					$last=$path;
 					$path=dirname($path);
 
-				return $path."/wp-load.php";
+					if ($last==$path)
+						throw new \Exception("Not inside a wordpress install.");
+				}
 			}
 		}
 	}
