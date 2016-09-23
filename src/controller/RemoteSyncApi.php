@@ -11,7 +11,38 @@ class RemoteSyncApi {
 	 * Construct.
 	 */
 	public function __construct() {
-		$this->calls=array("ls","get","put","add","del","getAttachment");
+		$this->calls=array(
+			"ls","get","put","add","del",
+			"getAttachment","getBinary"
+		);
+	}
+
+	/**
+	 * Get binary data for a resource.
+	 */
+	public function getBinary($args) {
+		$syncResource=SyncResource::findOneForType($args["type"],$args["slug"]);
+		if (!$syncResource)
+			throw new Exception("resource not found, slug=".$args["slug"]);
+
+		$filename=$syncResource->getResourceBinaryData();
+
+		if (!file_exists($filename))
+			throw new Exception("file doesn't exist: ".$filename);
+
+		if (!is_file($filename))
+			throw new Exception("that's not a file: ".$filename);
+
+		$type=mime_content_type($filename);
+		header("Content-Type: $type");
+		header("Content-Disposition: attachment; filename=".basename($filename));
+
+		$filesize=filesize($filename);
+		header("Content-Length: ".$filesize);
+    	header("Content-Range: 0-".($filesize-1)."/".$filesize);
+
+		readfile($filename);
+		exit();
 	}
 
 	/**
@@ -90,13 +121,31 @@ class RemoteSyncApi {
 				"fileSize"=>$attachment->getFileSize()
 			);
 
+		$hasBinaryData=$resource->getResourceBinaryData()!=NULL;
+
 		return array(
 			"slug"=>$resource->getSlug(),
 			"revision"=>$resource->getLocalRevision(),
 			"type"=>$resource->getType(),
 			"data"=>$resource->getData(),
-			"attachments"=>$attachmentData
+			"attachments"=>$attachmentData,
+			"binary"=>$hasBinaryData
 		);
+	}
+
+	/**
+	 * Get posted binary data. Used by add and put.
+	 */
+	public function getPostedBinaryData() {
+		error_log(print_r($_FILES,TRUE));
+
+		if (!isset($_FILES["@"]))
+			return NULL;
+
+		if ($_FILES["@"]["error"])
+			throw new Exception("Unable to process binary data: ".$_FILES["@"]["error"]);
+
+		return $_FILES["@"]["tmp_name"];
 	}
 
 	/**
@@ -120,8 +169,10 @@ class RemoteSyncApi {
 		if (!$data)
 			throw new Exception("Unable to parse json data");
 
-		$syncer->createResource($args["slug"],$data);
+		$postedBinaryData=$this->getPostedBinaryData();
+		error_log("posted binary data: ".$postedBinaryData);
 
+		$syncer->createResourceWithBinaryData($args["slug"],$data,$postedBinaryData);
 		$syncResource=SyncResource::findOneForType($args["type"],$args["slug"]);
 
 		try {
@@ -162,14 +213,15 @@ class RemoteSyncApi {
 
 		$syncer=$resource->getSyncer();
 		$oldData=$syncer->getResource($resource->getSlug());
-		$syncer->updateResource($resource->getSlug(),$data);
+		$oldBinaryData=$syncer->getResourceBinaryData($resource->getSlug());
+		$syncer->updateResourceWithBinaryData($resource->getSlug(),$data,$this->getPostedBinaryData());
 
 		try {
 			$resource->processPostedAttachments();
 		}
 
 		catch (Exception $e) {
-			$syncer->updateResource($resource->getSlug(),$oldData);
+			$syncer->updateResourceWithBinaryData($resource->getSlug(),$oldData,$oldBinaryData);
 			throw $e;
 		}
 
@@ -209,7 +261,8 @@ class RemoteSyncApi {
 	public function handleException($exception) {
 		$res=array(
 			"error"=>TRUE,
-			"message"=>$exception->getMessage()
+			"message"=>$exception->getMessage(),
+			"trace"=>$exception->getTraceAsString()
 		);
 
 		http_response_code(500);

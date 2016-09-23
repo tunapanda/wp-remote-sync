@@ -62,6 +62,28 @@ class RemoteResource {
 
 			$this->attachments[]=$attachment;
 		}
+
+		$this->hasBinaryData=$remoteData["binary"];
+	}
+
+	/**
+	 * Download associated binary data and store as a temporary file.
+	 */
+	public function downloadBinaryData() {
+		$this->fetch();
+
+		if (!$this->hasBinaryData)
+			return NULL;
+
+		$targetFileName=tempnam(sys_get_temp_dir(),"wp-remote-sync-");
+
+		$res=RemoteSyncPlugin::instance()->remoteCall("getBinary")
+			->addPostField("slug",$this->slug)
+			->addPostField("type",$this->type)
+			->setDownloadFileName($targetFileName)
+			->exec();
+
+		return $targetFileName;
 	}
 
 	/**

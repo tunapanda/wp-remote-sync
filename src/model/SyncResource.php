@@ -118,6 +118,13 @@ class SyncResource extends SmartRecord {
 	}
 
 	/**
+	 * Get binary data file name.
+	 */
+	public function getResourceBinaryData() {
+		return $this->getSyncer()->getResourceBinaryData($this->slug);
+	}
+
+	/**
 	 * Get syncer.
 	 */
 	public function getSyncer() {
@@ -215,23 +222,25 @@ class SyncResource extends SmartRecord {
 		//error_log("files: ".print_r($_FILES,TRUE));
 
 		foreach ($_FILES as $field=>$uploadedFile) {
-			if ($uploadedFile["error"])
-				throw new Exception("Unable to process uploaded file: ".$uploadedFile["error"]);
+			if ($field!="@") {
+				if ($uploadedFile["error"])
+					throw new Exception("Unable to process uploaded file: ".$uploadedFile["error"]);
 
-			//$fileName=urldecode($uploadedFile["name"]);
-			$fileName=urldecode($field);
-			$targetFileName=$this->getAttachmentDirectory()."/".$fileName;
+				//$fileName=urldecode($uploadedFile["name"]);
+				$fileName=urldecode($field);
+				$targetFileName=$this->getAttachmentDirectory()."/".$fileName;
 
-			$dir=dirname($targetFileName);
+				$dir=dirname($targetFileName);
 
-			if (!file_exists($dir)) {
-				if (!mkdir($dir,0777,TRUE))
-					throw new Exception("Unable to create directory: ".$dir);
+				if (!file_exists($dir)) {
+					if (!mkdir($dir,0777,TRUE))
+						throw new Exception("Unable to create directory: ".$dir);
+				}
+
+				$res=copy($uploadedFile["tmp_name"],$targetFileName);
+				if (!$res)
+					throw new Exception("Unable to copy uploaded file");
 			}
-
-			$res=copy($uploadedFile["tmp_name"],$targetFileName);
-			if (!$res)
-				throw new Exception("Unable to copy uploaded file");
 		}
 	}
 
@@ -371,8 +380,16 @@ class SyncResource extends SmartRecord {
 	 */
 	function createLocalResource() {
 		$slug=$this->getRemoteResource()->getSlug();
+		$binaryDataFileName=$this->getRemoteResource()->downloadBinaryData();
 
-		$localId=$this->getSyncer()->createResource($slug,$this->getRemoteResource()->getData());
+		$localId=$this->getSyncer()->createResourceWithBinaryData(
+			$slug,
+			$this->getRemoteResource()->getData(),
+			$binaryDataFileName
+		);
+
+		if ($binaryDataFileName)
+			@unlink($binaryDataFileName);
 
 		$this->localDataFetched=FALSE;
 		$this->baseRevision=$this->getLocalRevision();
@@ -397,10 +414,16 @@ class SyncResource extends SmartRecord {
 	 * Update local resource with remote data.
 	 */
 	function updateLocalResource() {
-		$this->getSyncer()->updateResource(
+		$binaryDataFileName=$this->getRemoteResource()->downloadBinaryData();
+
+		$this->getSyncer()->updateResourceWithBinaryData(
 			$this->getRemoteResource()->getSlug(),
-			$this->getRemoteResource()->getData()
+			$this->getRemoteResource()->getData(),
+			$binaryDataFileName
 		);
+
+		if ($binaryDataFileName)
+			@unlink($binaryDataFileName);
 
 		$this->localDataFetched=FALSE;
 		$this->baseRevision=$this->getLocalRevision();
@@ -425,6 +448,7 @@ class SyncResource extends SmartRecord {
 			->addPostField("slug",$this->slug)
 			->addPostField("data",json_encode($this->getData()));
 
+		$this->addBinaryDataToRemoteCall($call);
 		$this->addAttachmentsToRemoteCall($call);
 		$call->exec();
 
@@ -451,6 +475,7 @@ class SyncResource extends SmartRecord {
 			->addPostField("data",json_encode($this->getData()))
 			->addPostField("baseRevision",$this->baseRevision);
 
+		$this->addBinaryDataToRemoteCall($call);
 		$this->addAttachmentsToRemoteCall($call);
 		$call->exec();
 
@@ -500,6 +525,17 @@ class SyncResource extends SmartRecord {
 				$logger->log("Skipping: ".$attachment->getFileName());
 			}
 		}
+	}
+
+	/**
+	 * Add binary data to remote call.
+	 */
+	private function addBinaryDataToRemoteCall($call) {
+		$binaryDataFileName=$this->getResourceBinaryData();
+		if (!$binaryDataFileName)
+			return;
+
+		$call->addFileUpload("@",$binaryDataFileName);
 	}
 
 	/**
