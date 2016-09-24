@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__."/../plugin/ResourceUpdateInfo.php";
+
 /**
  * Handle api calls.
  */
@@ -137,7 +139,7 @@ class RemoteSyncApi {
 	 * Get posted binary data. Used by add and put.
 	 */
 	public function getPostedBinaryData() {
-		error_log(print_r($_FILES,TRUE));
+		//error_log(print_r($_FILES,TRUE));
 
 		if (!isset($_FILES["@"]))
 			return NULL;
@@ -169,10 +171,10 @@ class RemoteSyncApi {
 		if (!$data)
 			throw new Exception("Unable to parse json data");
 
-		$postedBinaryData=$this->getPostedBinaryData();
-		error_log("posted binary data: ".$postedBinaryData);
+		$updateInfo=new ResourceUpdateInfo(TRUE,
+			$data,$this->getPostedBinaryData());
 
-		$syncer->createResourceWithBinaryData($args["slug"],$data,$postedBinaryData);
+		$syncer->updateResource($args["slug"],$updateInfo);
 		$syncResource=SyncResource::findOneForType($args["type"],$args["slug"]);
 
 		try {
@@ -214,14 +216,18 @@ class RemoteSyncApi {
 		$syncer=$resource->getSyncer();
 		$oldData=$syncer->getResource($resource->getSlug());
 		$oldBinaryData=$syncer->getResourceBinaryData($resource->getSlug());
-		$syncer->updateResourceWithBinaryData($resource->getSlug(),$data,$this->getPostedBinaryData());
+
+		$updateInfo=new ResourceUpdateInfo(FALSE,
+			$data,$this->getPostedBinaryData());
+
+		$syncer->updateResource($resource->getSlug(),$updateInfo);
 
 		try {
 			$resource->processPostedAttachments();
 		}
 
 		catch (Exception $e) {
-			$syncer->updateResourceWithBinaryData($resource->getSlug(),$oldData,$oldBinaryData);
+			// we should "reset" the resource here, but this is difficult...
 			throw $e;
 		}
 

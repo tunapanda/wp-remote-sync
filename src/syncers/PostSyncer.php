@@ -208,75 +208,71 @@ class PostSyncer extends AResourceSyncer {
 	}
 
 	/**
-	 * Update a local resource with data.
+	 * Update resource.
 	 */
-	function updateResource($slug, $data) {
-		if ($data["post_name"]!=$slug)
-			throw new Exception("Sanity check failed, slug!=name");
-
-		$localId=$this->getIdBySlug($slug);
-		$post=get_post($localId);
-
-		$post->post_name=$data["post_name"];
-		$post->post_title=$data["post_title"];
-		$post->post_type=$data["post_type"];
-		$post->post_content=$data["post_content"];
-		$post->post_excerpt=$data["post_excerpt"];
-		$post->post_status=$data["post_status"];
-		$post->post_parent=$this->getIdBySlug($data["post_parent"]);
-		$post->menu_order=$data["menu_order"];
-
-		PostSyncer::setPostMeta($localId,$data["meta"]);
-
-		wp_update_post($post);
-	}
-
-	/**
-	 * Create a local resource.
-	 */
-	function createResource($slug, $data) {
+	function updateResource($slug, $updateInfo) {
 		global $wpdb;
 
-		if (!$slug)
-			throw new Exception("Tried to create post with empty slug!");
+		$data=$updateInfo->getData();
 
 		if ($data["post_name"]!=$slug)
 			throw new Exception("Sanity check failed, slug!=name");
 
-		// Check if it exists in trash, if so delete permanently,
-		// because we need the slug to be free.
-		$q=$wpdb->prepare("SELECT * FROM {$wpdb->prefix}posts WHERE post_name=%s",$slug);
-		$row=$wpdb->get_row($q);
-		if ($wpdb->last_error)
-			throw new Exception($wpdb->last_error);
+		if (!$slug)
+			throw new Exception("Tried to create or update post with empty slug!");
 
-		if ($row) {
-			if ($row->post_status=="trash" || $row->post_status=="inherit")
-				wp_delete_post($row->ID,TRUE);
+		if ($updateInfo->isCreate()) {
+			// Check if it exists in trash, if so delete permanently,
+			// because we need the slug to be free.
+			$q=$wpdb->prepare("SELECT * FROM {$wpdb->prefix}posts WHERE post_name=%s",$slug);
+			$row=$wpdb->get_row($q);
+			if ($wpdb->last_error)
+				throw new Exception($wpdb->last_error);
 
-			else
-				throw new Exception("Slug not free, status=".$row->post_status);
+			if ($row) {
+				if ($row->post_status=="trash" || $row->post_status=="inherit")
+					wp_delete_post($row->ID,TRUE);
+
+				else
+					throw new Exception("Slug not free, status=".$row->post_status);
+			}
+
+			$localId=wp_insert_post(array(
+				"post_name"=>$slug,
+				"post_title"=>$data["post_title"],
+				"post_type"=>$data["post_type"],
+				"post_content"=>$data["post_content"],
+				"post_excerpt"=>$data["post_excerpt"],
+				"post_status"=>$data["post_status"],
+				"post_parent"=>$this->getIdBySlug($data["post_parent"]),
+				"menu_order"=>$data["menu_order"]
+			));
+
+			PostSyncer::setPostMeta($localId,$data["meta"]);
+
+			$post=get_post($localId);
+
+			if ($post->post_name!=$slug)
+				throw new Exception("Slug changed when saving: original: ".$slug);
 		}
 
-		$localId=wp_insert_post(array(
-			"post_name"=>$slug,
-			"post_title"=>$data["post_title"],
-			"post_type"=>$data["post_type"],
-			"post_content"=>$data["post_content"],
-			"post_excerpt"=>$data["post_excerpt"],
-			"post_status"=>$data["post_status"],
-			"post_parent"=>$this->getIdBySlug($data["post_parent"]),
-			"menu_order"=>$data["menu_order"]
-		));
+		else {
+			$localId=$this->getIdBySlug($slug);
+			$post=get_post($localId);
 
-		PostSyncer::setPostMeta($localId,$data["meta"]);
+			$post->post_name=$data["post_name"];
+			$post->post_title=$data["post_title"];
+			$post->post_type=$data["post_type"];
+			$post->post_content=$data["post_content"];
+			$post->post_excerpt=$data["post_excerpt"];
+			$post->post_status=$data["post_status"];
+			$post->post_parent=$this->getIdBySlug($data["post_parent"]);
+			$post->menu_order=$data["menu_order"];
 
-		$post=get_post($localId);
+			PostSyncer::setPostMeta($localId,$data["meta"]);
 
-		if ($post->post_name!=$slug)
-			throw new Exception("Slug changed when saving: original: ".$slug);
-
-		//return $localId;
+			wp_update_post($post);
+		}
 	}
 
 	/**

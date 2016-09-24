@@ -87,9 +87,12 @@ class H5pSyncer extends AResourceSyncer {
 	/**
 	 * Update a local resource with data.
 	 */
-	public function updateResourceWithBinaryData($slug, $data, $binaryData) {
-		//error_log("update with binary in h5p: ".$binaryData);
-		H5pUtil::saveH5p($slug,$binaryData,$data["title"]);
+	public function updateResource($slug, $updateInfo) {
+		$data=$updateInfo->getData();
+		$binaryDataFileName=$updateInfo->getBinaryDataFileName();
+
+		//error_log("update with binary in h5p: ".$binaryDataFileName);
+		H5pUtil::saveH5p($slug,$binaryDataFileName,$data["title"]);
 	}
 
 	/**

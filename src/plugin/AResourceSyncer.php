@@ -54,34 +54,7 @@ abstract class AResourceSyncer {
 	 * Update a local resource with data.
 	 * This is the most basic one.
 	 */
-	function updateResource($slug, $data) {
-		throw new Exception("Abstract");
-	}
-
-	/**
-	 * Update with binary data.
-	 */
-	function updateResourceWithBinaryData($slug, $data, $binaryData) {
-		$this->updateResource($slug,$data);
-	}
-
-	/**
-	 * Override this if you want to handle creation with binary data.
-	 */
-	function createResourceWithBinaryData($slug, $data, $binaryData) {
-		if ($binaryData)
-			$this->updateResourceWithBinaryData($slug, $data, $binaryData);
-
-		else
-			$this->createResource($slug,$data);
-	}
-
-	/**
-	 * Override this if create needs to be different from update.
-	 */
-	function createResource($slug, $data) {
-		$this->updateResource($slug,$data);
-	}
+	abstract function updateResource($slug, $updateInfo);
 
 	/**
 	 * Delete a local resource.

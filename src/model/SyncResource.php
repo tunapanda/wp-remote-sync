@@ -2,6 +2,8 @@
 
 require_once __DIR__."/../../ext/smartrecord/SmartRecord.php";
 require_once __DIR__."/RemoteResource.php";
+require_once __DIR__."/../plugin/ResourceUpdateInfo.php";
+
 /**
  * Manage one synced resouce.
  */
@@ -382,11 +384,12 @@ class SyncResource extends SmartRecord {
 		$slug=$this->getRemoteResource()->getSlug();
 		$binaryDataFileName=$this->getRemoteResource()->downloadBinaryData();
 
-		$localId=$this->getSyncer()->createResourceWithBinaryData(
-			$slug,
+		$resourceInfo=new ResourceUpdateInfo(TRUE,
 			$this->getRemoteResource()->getData(),
 			$binaryDataFileName
 		);
+
+		$localId=$this->getSyncer()->updateResource($slug,$resourceInfo);
 
 		if ($binaryDataFileName)
 			@unlink($binaryDataFileName);
@@ -415,11 +418,15 @@ class SyncResource extends SmartRecord {
 	 */
 	function updateLocalResource() {
 		$binaryDataFileName=$this->getRemoteResource()->downloadBinaryData();
-
-		$this->getSyncer()->updateResourceWithBinaryData(
-			$this->getRemoteResource()->getSlug(),
+		$resourceInfo=new ResourceUpdateInfo(FALSE,
 			$this->getRemoteResource()->getData(),
 			$binaryDataFileName
+		);
+
+
+		$this->getSyncer()->updateResource(
+			$this->getRemoteResource()->getSlug(),
+			$resourceInfo
 		);
 
 		if ($binaryDataFileName)

@@ -110,41 +110,34 @@ class AttachmentSyncer extends AResourceSyncer {
 	/**
 	 * Update a local resource with data.
 	 */
-	function updateResource($slug, $data) {
-		$localId=$this->getIdBySlug($slug);
-		$post=get_post($localId);
+	function updateResource($slug, $updateInfo) {
+		$data=$updateInfo->getData();
 
 		if ($slug!=$data["post_name"])
 			throw new Exception("Sanity check failed, slug!=post_name");
 
-		$post->post_name=$data["post_name"];
-		$post->post_title=$data["post_title"];
-		$post->post_mime_type=$data["post_mime_type"];
-		wp_update_post($post);
+		if ($updateInfo->isCreate()) {
+			$localId=wp_insert_post(array(
+				"post_name"=>$slug,
+				"guid"=>$data["guid"],
+				"post_title"=>$data["post_title"],
+				"post_mime_type"=>$data["post_mime_type"],
+				"post_type"=>"attachment"
+			));
+		}
+
+		else {
+			$localId=$this->getIdBySlug($slug);
+			$post=get_post($localId);
+
+			$post->post_name=$data["post_name"];
+			$post->post_title=$data["post_title"];
+			$post->post_mime_type=$data["post_mime_type"];
+			wp_update_post($post);
+		}
 
 		update_post_meta($localId,"_wp_attached_file",$data["_wp_attached_file"]);
 		update_post_meta($localId,"_wp_attachment_metadata",$data["_wp_attachment_metadata"]);
-	}
-
-	/**
-	 * Create a local resource.
-	 */
-	function createResource($slug, $data) {
-		if ($slug!=$data["post_name"])
-			throw new Exception("Sanity check failed, slug!=post_name");
-
-		$id=wp_insert_post(array(
-			"post_name"=>$slug,
-			"guid"=>$data["guid"],
-			"post_title"=>$data["post_title"],
-			"post_mime_type"=>$data["post_mime_type"],
-			"post_type"=>"attachment"
-		));
-
-		update_post_meta($id,"_wp_attached_file",$data["_wp_attached_file"]);
-		update_post_meta($id,"_wp_attachment_metadata",$data["_wp_attachment_metadata"]);
-
-		return $id;
 	}
 
 	/**

@@ -41,8 +41,8 @@ class PluggableSyncer extends AResourceSyncer {
 	/**
 	 * Update resource.
 	 */
-	public function updateResource($slug, $data) {
-		return $this->impl->updateResource($slug,$data);
+	public function updateResource($slug, $updateInfo) {
+		return $this->impl->updateResource($slug,$updateInfo);
 	}
 
 	/**
@@ -50,16 +50,6 @@ class PluggableSyncer extends AResourceSyncer {
 	 */
 	public function deleteResource($slug) {
 		return $this->impl->deleteResource($slug);
-	}
-
-	/**
-	 * Create resource
-	 */
-	public function createResource($slug, $data) {
-		if (!method_exists($this->impl,"createResource"))
-			return $this->impl->updateResource($slug,$data);
-
-		return $this->impl->createResource($slug,$data);
 	}
 
 	/**
