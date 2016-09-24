@@ -61,29 +61,6 @@ class H5PSyncerTest extends WP_UnitTestCase {
 		RemoteSyncPlugin::instance()->install();
 	}
 
-	function test_getResourceAttachments() {
-		global $wpdb;
-
-		$wpdb->query("INSERT INTO {$wpdb->prefix}h5p_contents (slug) VALUES ('test-slug')",NULL);
-		if ($wpdb->last_error)
-			throw new Exception($wpdb->last_error);
-
-		$id=$wpdb->insert_id;
-
-		$upload_dir_info=wp_upload_dir();
-		$uploadBasedir=$upload_dir_info["basedir"];
-		if (!file_exists($uploadBasedir."/h5p/content/{$id}/images/"))
-			mkdir($uploadBasedir."/h5p/content/{$id}/images/",0777,TRUE);
-
-		file_put_contents($uploadBasedir."/h5p/content/{$id}/images/test.txt","hello");
-
-		$h5pSyncer=new H5pSyncer();
-		$attachments=$h5pSyncer->getResourceAttachments("test-slug");
-
-		$this->assertEquals(1,sizeof($attachments));
-		$this->assertEquals($attachments[0],"images/test.txt");
-	}
-
 	function test_getResourceSlugs() {
 		global $wpdb;
 
@@ -95,57 +72,6 @@ class H5PSyncerTest extends WP_UnitTestCase {
 		$a=$h5pSyncer->listResourceSlugs();
 
 		$this->assertEquals($a,array("test-slug"));
-	}
-
-	function test_updateLibraries() {
-		global $wpdb;
-
-		$wpdb->query("INSERT INTO {$wpdb->prefix}h5p_libraries (name, major_version, minor_version, patch_version) VALUES ('TestLib',1,1,0),('TestStable',1,0,0),('TestUpgrade',1,0,0),('TestUpgrade',1,0,1)");
-		if ($wpdb->last_error)
-			throw new Exception($wpdb->last_error);
-
-		$h5pSyncer=new H5pSyncer();
-
-		$h5pData=array(
-			"title"=>"Test Content",
-			"parameters"=>"this_is_json... :)",
-			"filtered"=>"this_is_also_json... :)",
-			"slug"=>"h5p-test",
-			"embed_type"=>"mumble mumble...",
-			"disable"=>"0",
-			"content_type"=>"something",
-			"keywords"=>"a b c",
-			"description"=>"this is just a test",
-			"license"=>"open source",
-			"library"=>array("name"=>"TestLib","major_version"=>"1","minor_version"=>"1","patch_version"=>"0"),
-			"libraries"=>array(
-				array(
-					"name"=>"TestStable",
-					"minor_version"=>"0",
-					"major_version"=>"1",
-					"patch_version"=>"0",
-					"dependency_type"=>"test",
-					"weight"=>"3",
-					"drop_css"=>"0",
-				),
-				array(
-					"name"=>"TestUpgrade",
-					"minor_version"=>"0",
-					"major_version"=>"1",
-					"patch_version"=>"0",
-					"dependency_type"=>"test",
-					"weight"=>"3",
-					"drop_css"=>"0",
-				)
-			)
-		);
-
-		$h5pSyncer->createResource("h5p-test",$h5pData);
-
-		$h5pData["libraries"][1]["patch_version"]="1";
-		$h5pSyncer->updateResource("h5p-test",$h5pData);
-
-
 	}
 }
 

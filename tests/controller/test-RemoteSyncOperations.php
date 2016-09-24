@@ -57,7 +57,8 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 			"revision"=>$rev,
 			"type"=>"post",
 			"data"=>$data,
-			"attachments"=>array()
+			"attachments"=>array(),
+			"binary"=>FALSE
 		));
 		Curl::mockResult(array());
 
@@ -98,7 +99,8 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 			"revision"=>$rev,
 			"type"=>"post",
 			"data"=>$data,
-			"attachments"=>array()
+			"attachments"=>array(),
+			"binary"=>FALSE
 		));
 		Curl::mockResult(array());
 

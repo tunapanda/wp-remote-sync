@@ -92,7 +92,11 @@ class H5pSyncer extends AResourceSyncer {
 		$binaryDataFileName=$updateInfo->getBinaryDataFileName();
 
 		//error_log("update with binary in h5p: ".$binaryDataFileName);
-		H5pUtil::saveH5p($slug,$binaryDataFileName,$data["title"]);
+		if ($updateInfo->isCreate())
+			H5pUtil::insertH5p($slug,$binaryDataFileName,$data["title"]);
+
+		else
+			H5pUtil::updateH5p($slug,$binaryDataFileName,$data["title"]);
 	}
 
 	/**
