@@ -25,6 +25,8 @@ class RemoteSyncPlugin extends Singleton {
 
 		$this->callMessage="Syncing...";
 		$this->lastPrintedMessage="";
+
+		$this->protocolVersion=2;
 	}
 
 	/**
@@ -131,6 +133,13 @@ class RemoteSyncPlugin extends Singleton {
 	}
 
 	/**
+	 * Get protocol version.
+	 */
+	public function getProtocolVersion() {
+		return $this->protocolVersion;
+	}
+
+	/**
 	 * Create a remote call.
 	 */
 	public function remoteCall($action, $message="Please wait...") {
@@ -150,6 +159,7 @@ class RemoteSyncPlugin extends Singleton {
 		$curl->setResultDecoding(Curl::JSON);
 		$curl->addPostField("action",$action);
 		$curl->addPostField("key",trim(get_option("rs_access_key")));
+		$curl->addPostField("version",$this->protocolVersion);
 		$curl->setPercentFunc(array($this,"onCurlPercent"));
 
 		return $curl;

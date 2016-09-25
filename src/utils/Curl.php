@@ -223,7 +223,7 @@ class Curl {
 				$raw=$res;
 				$res=json_decode($res,TRUE);
 				if ($res===NULL)
-					throw new Exception("Unable to decode json: ".strlen($raw)." ".$raw);
+					throw new Exception("Unable to decode json: ".strlen($raw)." bytes: ".$raw);
 
 				if (array_key_exists("Error", $res))
 					throw new Exception($res["Error"]);
