@@ -252,7 +252,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 
 		// test listing with the right key
 		$ls_res1 = array();
-		$args = array("key"=>"test", "type"=>"post");
+		$args = array("key"=>"test", "type"=>"post", "version"=>2);
 		$ls_res1 = $api->doApiCall("ls", $args);
 		//print_r($ls_res1);
 
@@ -270,7 +270,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 
 		// test deleting with right key
 		$del_res1 = array();
-		$args = array("key"=>"test", "type"=>"post", "slug"=>$ls_res1[0]["slug"]);
+		$args = array("key"=>"test", "type"=>"post", "slug"=>$ls_res1[0]["slug"], "version"=>2);
 		$del_res1 = $api->doApiCall("del", $args);
 		//print_r($del_res1);
 	}
