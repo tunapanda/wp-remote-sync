@@ -171,6 +171,7 @@ class H5pUtil {
 
 	/**
 	 * Get library name on the form LibraryName-#.#.#
+	 * Patch version is not included.
 	 */
 	static function getLibraryNameById($id) {
 		global $wpdb;
@@ -190,7 +191,6 @@ class H5pUtil {
 
 		return $row["name"]."-".
 			$row["major_version"].".".
-			$row["minor_version"].".".
-			$row["patch_version"];
+			$row["minor_version"];
 	}
 }

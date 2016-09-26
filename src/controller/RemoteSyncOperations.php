@@ -162,7 +162,10 @@ class RemoteSyncOperations {
 				"artificial-intelligence-a-brief-introduction",
 				"transport2",
 				"cert4",
-				"introduction-to-programming-principles"
+				"introduction-to-programming-principles",
+				"parts-of-a-football-pitch",
+				"example",
+				"scratch-quizes"
 			);
 
 			foreach ($syncResources as $syncResource) {
@@ -172,7 +175,14 @@ class RemoteSyncOperations {
 				//$this->log("  ".$syncResource->getSlug().": ".$syncResource->getState());
 				switch ($syncResource->getState()) {
 					case SyncResource::NEW_REMOTE:
-						$syncResource->createLocalResource();
+						try {
+							$syncResource->createLocalResource();
+						}
+
+						catch (Exception $e) {
+							$this->log("  ".$syncResource->getSlug().": Error creating.");
+							throw $e;
+						}
 
 						try {
 							$syncResource->downloadAttachments();
@@ -180,7 +190,7 @@ class RemoteSyncOperations {
 
 						catch (Exception $e) {
 							$syncResource->deleteLocalResource();
-							$this->log("  ".$syncResource->getSlug().": Error creating.");
+							$this->log("  ".$syncResource->getSlug().": Error downloading.");
 							throw $e;
 						}
 
