@@ -70,6 +70,7 @@ class H5pUtil {
 	 */
 	static function override_caps($allcaps) {
 		$allcaps["manage_h5p_libraries"]=TRUE;
+		$allcaps["edit_h5p_contents"]=TRUE;
 		/*echo "overriding...";
 		print_r($allcaps);*/
 
@@ -83,7 +84,7 @@ class H5pUtil {
 	static function insertH5p($slug, $h5pFileName, $title) {
 		global $wpdb;
 
-		add_filter('user_has_cap','H5pUtil::override_caps');
+		add_filter('user_has_cap','remotesync\H5pUtil::override_caps');
 
 		if (H5pUtil::h5pExists($slug)) {
 			remove_filter('user_has_cap','H5pUtil::override_caps');
@@ -101,7 +102,10 @@ class H5pUtil {
 
 		if (!$valid) {
 			remove_filter('user_has_cap','H5pUtil::override_caps');
-			throw new Exception("H5P content package not valid.");
+			throw new Exception(
+				"H5P content package not valid, slug: ".$slug."\n".
+				"Errors: \n".join("\n",$validator->h5pF->getMessages("error"))
+			);
 		}
 
 		$storage = $plugin->get_h5p_instance('storage');

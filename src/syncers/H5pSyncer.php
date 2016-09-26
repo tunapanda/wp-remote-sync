@@ -47,10 +47,10 @@ class H5pSyncer extends AResourceSyncer {
 	 * Get post by local id.
 	 */
 	public function getResource($slug) {
-		if (!H5pUtil::h5pExists($slug))
+		if (!remotesync\H5pUtil::h5pExists($slug))
 			return NULL;
 
-		$localId=H5pUtil::getIdBySlug($slug);
+		$localId=remotesync\H5pUtil::getIdBySlug($slug);
 		global $wpdb;
 
 		$q=$wpdb->prepare("SELECT * FROM {$wpdb->prefix}h5p_contents WHERE id=%s",$localId);
@@ -73,7 +73,7 @@ class H5pSyncer extends AResourceSyncer {
 			"keywords"=>$h5p["keywords"]?$h5p["keywords"]:"",
 			"description"=>$h5p["description"]?$h5p["description"]:"",
 			"license"=>$h5p["license"]?$h5p["license"]:"",
-			"library"=>H5pUtil::getLibraryNameById($h5p["library_id"]),
+			"library"=>remotesync\H5pUtil::getLibraryNameById($h5p["library_id"]),
 		);
 	}
 
@@ -81,7 +81,7 @@ class H5pSyncer extends AResourceSyncer {
 	 * Get resource data.
 	 */
 	public function getResourceBinaryData($slug) {
-		$localId=H5pUtil::getIdBySlug($slug);
+		$localId=remotesync\H5pUtil::getIdBySlug($slug);
 		$upload_dir_info=wp_upload_dir();
 		return $upload_dir_info["basedir"]."/h5p/exports/".$slug."-".$localId.".h5p";
 	}
@@ -90,21 +90,36 @@ class H5pSyncer extends AResourceSyncer {
 	 * Update a local resource with data.
 	 */
 	public function updateResource($slug, $updateInfo) {
+		global $wpdb;
+
 		$data=$updateInfo->getData();
 		$binaryDataFileName=$updateInfo->getBinaryDataFileName();
 
 		//error_log("update with binary in h5p: ".$binaryDataFileName);
 		if ($updateInfo->isCreate())
-			H5pUtil::insertH5p($slug,$binaryDataFileName,$data["title"]);
+			remotesync\H5pUtil::insertH5p($slug,$binaryDataFileName,$data["title"]);
 
 		else
-			H5pUtil::updateH5p($slug,$binaryDataFileName,$data["title"]);
+			remotesync\H5pUtil::updateH5p($slug,$binaryDataFileName,$data["title"]);
+
+		$localId=remotesync\H5pUtil::getIdBySlug($slug);
+
+		$q=$wpdb->prepare(
+			"UPDATE  {$wpdb->prefix}h5p_contents ".
+			"SET     disable=%s ".
+			"WHERE   id=%s",
+			$data["disable"],$localId
+		);
+
+		$wpdb->query($q);
+		if ($wpdb->last_error)
+			throw new Exception($wpdb->last_error);
 	}
 
 	/**
 	 * Delete a local resource.
 	 */
 	function deleteResource($slug) {
-		H5pUtil::deleteH5p($slug);
+		remotesync\H5pUtil::deleteH5p($slug);
 	}
 }

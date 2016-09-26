@@ -15,7 +15,9 @@
 	//
 	// From the plugin directory.
 
-	H5pUtil::saveH5p("my-h5p",__DIR__."/testing-with-image.h5p","This is my H5P");
+	use remotesync\H5pUtil;
+
+	H5pUtil::saveH5p("my-h5p",__DIR__."/introduction-to-3d-printing-133.h5p","This is my H5P");
 	//H5pUtil::insertH5p("my-h5p",__DIR__."/testing-with-image.h5p","This is my H5P");
 	//H5pUtil::deleteH5p("my-h5p");
 

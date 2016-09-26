@@ -34,6 +34,7 @@ class RemoteSyncOperations {
 	 */
 	public function handleOperation($operation) {
 		set_exception_handler(array($this,"handleException"));
+		set_time_limit(0);
 
 		$operation=strtolower($operation);
 		if (!in_array($operation,$this->operations))
@@ -155,7 +156,20 @@ class RemoteSyncOperations {
 				SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE
 			);
 
+			$blacklist=array(
+				"past-present-and-future-of-3d-printing",
+				"while-for-and-nested-loops",
+				"artificial-intelligence-a-brief-introduction",
+				"transport2",
+				"cert4",
+				"introduction-to-programming-principles"
+			);
+
 			foreach ($syncResources as $syncResource) {
+				if (in_array($syncResource->getSlug(),$blacklist))
+					continue;
+
+				//$this->log("  ".$syncResource->getSlug().": ".$syncResource->getState());
 				switch ($syncResource->getState()) {
 					case SyncResource::NEW_REMOTE:
 						$syncResource->createLocalResource();
@@ -166,6 +180,7 @@ class RemoteSyncOperations {
 
 						catch (Exception $e) {
 							$syncResource->deleteLocalResource();
+							$this->log("  ".$syncResource->getSlug().": Error creating.");
 							throw $e;
 						}
 
