@@ -3,6 +3,8 @@
 require_once __DIR__."/../plugin/AResourceSyncer.php";
 require_once __DIR__."/../utils/H5pUtil.php";
 
+use remotesync\H5pUtil;
+
 /**
  * Sync wordpress posts.
  */

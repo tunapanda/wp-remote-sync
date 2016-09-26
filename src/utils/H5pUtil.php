@@ -1,5 +1,10 @@
 <?php
 
+namespace remotesync;
+
+use \H5P_Plugin;
+use \Exception;
+
 /**
  * Utilities for working with H5P content.
  */
