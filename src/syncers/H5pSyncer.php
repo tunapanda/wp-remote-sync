@@ -65,7 +65,6 @@ class H5pSyncer extends AResourceSyncer {
 		return array(
 			"title"=>$h5p["title"],
 			"parameters"=>$h5p["parameters"],
-			"filtered"=>$h5p["filtered"],
 			"slug"=>$h5p["slug"],
 			"embed_type"=>$h5p["embed_type"],
 			"disable"=>strval($h5p["disable"]),
