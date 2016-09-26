@@ -157,15 +157,9 @@ class RemoteSyncOperations {
 			);
 
 			$blacklist=array(
-				"past-present-and-future-of-3d-printing",
-				"while-for-and-nested-loops",
-				"artificial-intelligence-a-brief-introduction",
-				"transport2",
 				"cert4",
-				"introduction-to-programming-principles",
-				"parts-of-a-football-pitch",
-				"example",
-				"scratch-quizes"
+				"swagpath-step-2",
+				"introduction-to-terminal"
 			);
 
 			foreach ($syncResources as $syncResource) {
