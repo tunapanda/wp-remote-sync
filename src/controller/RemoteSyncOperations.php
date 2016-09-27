@@ -156,16 +156,7 @@ class RemoteSyncOperations {
 				SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE
 			);
 
-			$blacklist=array(
-				"cert4",
-				"swagpath-step-2",
-				"introduction-to-terminal"
-			);
-
 			foreach ($syncResources as $syncResource) {
-				if (in_array($syncResource->getSlug(),$blacklist))
-					continue;
-
 				//$this->log("  ".$syncResource->getSlug().": ".$syncResource->getState());
 				switch ($syncResource->getState()) {
 					case SyncResource::NEW_REMOTE:
