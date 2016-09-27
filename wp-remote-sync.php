@@ -31,6 +31,15 @@ function rs_admin_menu() {
 		'rs_operations',
 		'rs_create_operations_page'
 	);
+
+	add_submenu_page(
+		'options.php',
+		'Remote Sync Operations',
+		'Remote Sync Operations',
+		'manage_options',
+		'rs_view_test',
+		'rs_view_test'
+	);
 }
 
 /**
@@ -40,6 +49,13 @@ function rs_admin_init() {
 	register_setting("rs","rs_remote_site_url");
 	register_setting("rs","rs_merge_strategy");
 	register_setting("rs","rs_access_key");
+}
+
+/**
+ * Test view.
+ */
+function rs_view_test() {
+	echo "hello";
 }
 
 /**
