@@ -55,7 +55,7 @@ function rs_admin_init() {
  * Test view.
  */
 function rs_view_test() {
-	echo "hello";
+	require __DIR__."/tests/view/resourcelisttest.php";
 }
 
 /**

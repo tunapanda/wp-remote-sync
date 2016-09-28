@@ -1,11 +1,11 @@
 <?php
 
-namespace remotesync
+namespace remotesync;
 
 /**
  * Simple template renderer.
  */
-class Template() {
+class Template {
 
 	/**
 	 * Render the template to a string.
@@ -22,7 +22,7 @@ class Template() {
 	/**
 	 * Echo out the rendered template.
 	 */
-	public static function echo($fn, $vars=array()) {
+	public static function print($fn, $vars=array()) {
 		foreach ($vars as $key=>$value)
 			$$key=$value;
 
