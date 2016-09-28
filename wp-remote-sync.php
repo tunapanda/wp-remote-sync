@@ -34,12 +34,31 @@ function rs_admin_menu() {
 
 	add_submenu_page(
 		'options.php',
+		'Remote Sync',
+		'Remote Sync',
+		'manage_options',
+		'rs_sync',
+		'rs_sync'
+	);
+
+	add_submenu_page(
+		'options.php',
 		'Remote Sync Operations',
 		'Remote Sync Operations',
 		'manage_options',
 		'rs_view_test',
 		'rs_view_test'
 	);
+}
+
+/**
+ * Show the sync page.
+ */
+function rs_sync() {
+	require_once __DIR__."/src/controller/RemoteSyncController.php";
+
+	$controller=new RemoteSyncController();
+	$controller->showResourceList();
 }
 
 /**
