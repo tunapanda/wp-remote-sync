@@ -15,12 +15,20 @@ GitHub Plugin URI: https://github.com/tunapanda/wp-remote-sync
  * Create the admin menu.
  */
 function rs_admin_menu() {
+	/*add_menu_page(
+		'Remote Sync',
+		'Remote Sync',
+		'manage_options',
+		'rs_main',
+		'rs_main'
+	);*/
+
 	add_options_page(
 		'Remote Sync',
 		'Remote Sync',
 		'manage_options',
-		'rs_settings',
-		'rs_create_settings_page'
+		'rs_main',
+		'rs_main'
 	);
 
 	add_submenu_page(
@@ -49,26 +57,47 @@ function rs_admin_menu() {
 		'rs_view_test',
 		'rs_view_test'
 	);
+
+	add_submenu_page(
+		'options.php',
+		'Remote Sync',
+		'Remote Sync',
+		'manage_options',
+		'rs_settings',
+		'rs_create_settings_page'
+	);
 }
 
 /**
  * Show the sync page.
  */
 function rs_sync() {
-	require_once __DIR__."/src/controller/RemoteSyncController.php";
+	require_once __DIR__."/src/controller/RemoteSyncPageController.php";
 
-	$controller=new RemoteSyncController();
+	$controller=new RemoteSyncPageController();
 	$controller->showResourceList();
+}
+
+/**
+ *
+ */
+function rs_main() {
+	require_once __DIR__."/src/controller/RemoteSyncPageController.php";
+
+	$controller=new RemoteSyncPageController();
+	$controller->showMainPage();
 }
 
 /**
  * Admin init.
  */
-function rs_admin_init() {
+/*function rs_admin_init() {
+	error_log("registering settings");
+
 	register_setting("rs","rs_remote_site_url");
 	register_setting("rs","rs_merge_strategy");
 	register_setting("rs","rs_access_key");
-}
+}*/
 
 /**
  * Test view.
@@ -106,7 +135,7 @@ function rs_create_operations_page() {
 }
 
 add_action('admin_menu','rs_admin_menu');
-add_action('admin_init','rs_admin_init');
+//add_action('admin_init','rs_admin_init');
 
 /**
  * Activation hook.

@@ -8,7 +8,7 @@ use remotesync\Template;
 /**
  * Display variaous pages.
  */
-class RemoteSyncController {
+class RemoteSyncPageController {
 
 	/**
 	 * Show the list of syncable resources.
@@ -74,5 +74,32 @@ class RemoteSyncController {
 		);
 
 		Template::print(__DIR__."/../../tpl/resourcelist.tpl.php",$params);
+	}
+
+	/**
+	 * Show the main page.
+	 */
+	function showMainPage() {
+		$tab=$_REQUEST["tab"];
+		if (!$tab)
+			$tab="sync";
+
+		$params=array(
+			"tab"=>$tab
+		);
+
+		$options=array(
+			"rs_remote_site_url",
+			"rs_access_key"
+		);
+
+		foreach ($options as $option) {
+			if (isset($_REQUEST[$option])) {
+				update_option($option,$_REQUEST[$option]);
+				$params["message"]="Settings saved.";
+			}
+		}
+
+		Template::print(__DIR__."/../../tpl/main.tpl.php",$params);
 	}
 }
