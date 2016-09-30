@@ -7,6 +7,12 @@
         </div>
     <?php } ?>
 
+    <?php if (isset($error)) { ?>
+        <div id="setting-error-settings_updated" class="error settings-error">
+            <p><strong><?php echo $error; ?></strong></p>
+        </div>
+    <?php } ?>
+
     <p>
         This plugin lets you sync content with another WordPress site, like a 
         distributed version control system.
@@ -32,7 +38,7 @@
             Click here to check the differences between this WordPress site and the remote site.
         </p>
         <a class="button button-primary"
-            href="<?php echo admin_url("options.php?page=rs_sync"); ?>">
+            href="<?php echo admin_url("options.php?page=rs_sync_preview"); ?>">
             Check Differences and Start Sync
         </a>
     <?php } else if ($tab=="connection") { ?>

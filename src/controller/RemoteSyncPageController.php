@@ -11,9 +11,28 @@ use remotesync\Template;
 class RemoteSyncPageController {
 
 	/**
+	 * Handle exception while listing resources.
+	 */
+	function handleExceptionInResourceList($exception) {
+		$this->errorMessage=$exception->getMessage();
+		// echo $exception->getTraceAsString());
+		$this->showMainPage();
+	}
+
+	/**
+	 * Show the sync job page.
+	 */
+	function showSync() {
+		$params=array();
+		Template::print(__DIR__."/../../tpl/sync.tpl.php",$params);
+	}
+
+	/**
 	 * Show the list of syncable resources.
 	 */
-	function showResourceList() {
+	function showSyncPreview() {
+		set_exception_handler(array($this,"handleExceptionInResourceList"));
+
 		$stateLabels=array(
 			SyncResource::NEW_LOCAL=>"Locally created",
 			SyncResource::NEW_REMOTE=>"Remotely created",
@@ -79,7 +98,7 @@ class RemoteSyncPageController {
 	/**
 	 * Show the main page.
 	 */
-	function showMainPage() {
+	function showMain() {
 		$tab=$_REQUEST["tab"];
 		if (!$tab)
 			$tab="sync";
@@ -93,6 +112,9 @@ class RemoteSyncPageController {
 			"rs_access_key",
 			"rs_incoming_access_key"
 		);
+
+		if ($this->errorMessage)
+			$params["error"]=$this->errorMessage;
 
 		foreach ($options as $option) {
 			if (isset($_REQUEST[$option])) {
