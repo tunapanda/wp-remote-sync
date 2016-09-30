@@ -57,8 +57,39 @@
                 <tr>
                     <th>Access Key</th>
                     <td>
-                        <input type="text" name="rs_access_key" value="<?php echo esc_attr(get_option("rs_access_key"));?>"/>
-                        <p class="description">Please enter the key so that you authenticate syncing.</p> 
+                        <input type="text" 
+                            name="rs_access_key" 
+                            value="<?php echo esc_attr(get_option("rs_access_key"));?>"
+                            class="regular-text"/>
+                        <p class="description">
+                            Please enter the key so that you authenticate syncing.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+            <?php submit_button(); ?>
+        </form>
+    <?php } else if ($tab=="remote") { ?>
+        <p>
+            These settings are used when this WordPress site acts as a remote for
+            other sites to connect to.
+        </p>
+        <form method="post"
+            action="<?php echo admin_url("options-general.php?page=rs_main&tab=remote"); ?>">
+            <?php settings_fields( 'rs' ); ?>
+            <?php do_settings_sections( 'rs' ); ?>
+            <table class="form-table">
+                <tr>
+                    <th>Incoming Access Key</th>
+                    <td>
+                        <input type="text"
+                            name="rs_incoming_access_key" 
+                            value="<?php echo esc_attr(get_option("rs_incoming_access_key"));?>"
+                            class="regular-text"/>
+                        <p class="description">
+                            This is the key that other sites should use when connecting to this site.
+                        </p>
                     </td>
                 </tr>
             </table>

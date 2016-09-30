@@ -248,6 +248,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 		));
 
 		update_option('rs_access_key', "test");
+		update_option('rs_incoming_access_key', "test");
 		$api = new RemoteSyncApi();
 
 		// test listing with the right key
