@@ -12,13 +12,42 @@ use remotesync\Template;
  */
 class RemoteSyncPageController {
 
+	const STATE_LABELS=array(
+		SyncResource::NEW_LOCAL=>"Locally created",
+		SyncResource::NEW_REMOTE=>"Remotely created",
+		SyncResource::DELETED_LOCAL=>"Locally deleted",
+		SyncResource::DELETED_REMOTE=>"Remotely deleted",
+		SyncResource::UPDATED_LOCAL=>"Locally updated",
+		SyncResource::UPDATED_REMOTE=>"Remotely updated",
+		SyncResource::CONFLICT=>"Updated on both servers",
+	);
+
+	const APPLICABLE_ACTIONS=array(
+		SyncResource::NEW_LOCAL=>array("createOnRemote"),
+		SyncResource::NEW_REMOTE=>array("createOnLocal"),
+		SyncResource::DELETED_LOCAL=>array("deleteOnRemote"),
+		SyncResource::DELETED_REMOTE=>array("deleteOnLocal"),
+		SyncResource::UPDATED_LOCAL=>array("upload"),
+		SyncResource::UPDATED_REMOTE=>array("download"),
+		SyncResource::CONFLICT=>array("download","upload")
+	);
+
+	const ACTION_LABELS=array(
+		"createOnRemote"=>"Upload local, create on remote",
+		"createOnLocal"=>"Download remote, create on local",
+		"deleteOnRemote"=>"Delete remote version too",
+		"deleteOnLocal"=>"Delete local version too",
+		"upload"=>"Upload local version to remote",
+		"download"=>"Download remote version to local",
+	);
+
 	/**
 	 * Handle exception while listing resources.
 	 */
 	function handleExceptionInResourceList($exception) {
 		$this->errorMessage=$exception->getMessage();
 		// echo $exception->getTraceAsString());
-		$this->showMainPage();
+		$this->showMain();
 	}
 
 	/**
@@ -58,7 +87,18 @@ class RemoteSyncPageController {
 			if (in_array($syncResource->getUniqueSlug(),$uniqueSlugs)) {
 				$logger->status("Syncing: ".$syncResource->getUniqueSlug());
 
+				$state=$syncResource->getState();
 				$action=$_REQUEST["action"][$syncResource->getUniqueSlug()];
+				$actionLabel=RemoteSyncPageController::ACTION_LABELS[$action];
+				$applicableActions=RemoteSyncPageController::APPLICABLE_ACTIONS[$state];
+
+				if (!in_array($action,$applicableActions))
+					throw new Exception(sprintf("%s: Action '%s' not applicable in state '%s', expected: %s",
+							$syncResource->getSlug(),
+							RemoteSyncPageController::ACTION_LABELS[$action],
+							RemoteSyncPageController::STATE_LABELS[$state],
+							join(",",$applicableActions)
+						));
 
 				switch ($action) {
 					case "createOnLocal":
@@ -85,10 +125,12 @@ class RemoteSyncPageController {
 						break;
 				}
 
-				$logger->message("Synced: ".$syncResource->getUniqueSlug());
+				$logger->message($action.": ".$syncResource->getUniqueSlug());
 			}
 		}
 
+		$logger->message("");
+		$logger->message("Done!");
 		$logger->done();
 	}
 
@@ -97,25 +139,6 @@ class RemoteSyncPageController {
 	 */
 	function showSyncPreview() {
 		set_exception_handler(array($this,"handleExceptionInResourceList"));
-
-		$stateLabels=array(
-			SyncResource::NEW_LOCAL=>"Locally created",
-			SyncResource::NEW_REMOTE=>"Remotely created",
-			SyncResource::DELETED_LOCAL=>"Locally deleted",
-			SyncResource::DELETED_REMOTE=>"Remotely deleted",
-			SyncResource::UPDATED_LOCAL=>"Locally updated",
-			SyncResource::UPDATED_REMOTE=>"Remotely updated",
-			SyncResource::CONFLICT=>"Updated on both servers",
-		);
-
-		$actionLabels=array(
-			SyncResource::NEW_LOCAL=>"Upload locate version to remote",
-			SyncResource::NEW_REMOTE=>"Download remote version to local",
-			SyncResource::DELETED_LOCAL=>"Delete remote version too",
-			SyncResource::DELETED_REMOTE=>"Delete local version too",
-			SyncResource::UPDATED_LOCAL=>"Upload locate version to remote",
-			SyncResource::UPDATED_REMOTE=>"Download remote version to local",
-		);
 
 		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();
 		$resourceViewCategoryDatas=array();
@@ -130,19 +153,19 @@ class RemoteSyncPageController {
 
 			foreach ($syncResources as $syncResource) {
 				$state=$syncResource->getState();
-				if ($stateLabels[$state]) {
+
+				$actions=array();
+				foreach (RemoteSyncPageController::APPLICABLE_ACTIONS[$state] as $action) {
+					$actions[$action]=RemoteSyncPageController::ACTION_LABELS[$action];
+				}
+
+				if (RemoteSyncPageController::STATE_LABELS[$state]) {
 					$resourceViewData=array(
 						"uniqueSlug"=>$syncResource->getUniqueSlug(),
 						"slug"=>$syncResource->getSlug(),
-						"stateLabel"=>$stateLabels[$state],
-						"conflict"=>FALSE
+						"stateLabel"=>RemoteSyncPageController::STATE_LABELS[$state],
+						"actions"=>$actions
 					);
-
-					if ($state==SyncResource::CONFLICT)
-						$resourceViewData["conflict"]=TRUE;
-
-					else
-						$resourceViewData["actionLabel"]=$actionLabels[$state];
 
 					$resourceViewDatas[]=$resourceViewData;
 				}

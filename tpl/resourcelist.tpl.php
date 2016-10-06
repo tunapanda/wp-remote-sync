@@ -54,13 +54,22 @@
 							<td><?php echo $resource["slug"];?></td>
 							<td><?php echo $resource["stateLabel"];?></td>
 							<td style="position: relative">
-								<?php if (isset($resource["conflict"]) && $resource["conflict"]) { ?>
-									<select style="position: absolute; top: 2px">
-										<option>Upload locate version to remote</option>
-										<option>Download remote version to local</option>
+								<?php if (sizeof($resource["actions"])>1) { ?>
+									<select style="position: absolute; top: 2px"
+										name="action[<?php echo $resource["uniqueSlug"]; ?>]">
+										<?php foreach ($resource["actions"] as $k=>$v) { ?>
+											<option value="<?php echo $k; ?>">
+												<?php echo $v; ?>
+											</option>
+										<?php } ?>
 									</select>
 								<?php } else { ?>
-									<?php echo $resource["actionLabel"];?>
+									<?php $k=array_keys($resource["actions"])[0]; ?>
+									<?php $v=array_values($resource["actions"])[0]; ?>
+									<input type="hidden" 
+										name="action[<?php echo $resource["uniqueSlug"]; ?>]"
+										value="<?php echo $k; ?>"/>
+									<?php echo $v; ?>
 								<?php } ?>
 							</td>
 						</tr>
