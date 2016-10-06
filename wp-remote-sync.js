@@ -10,11 +10,27 @@ function removeLastLine() {
 	el.value = el.value.substring(0, pos);
 }
 
+function removeOldLines() {
+	var el = document.getElementById("job-output");
+	var value = el.value;
+
+	var pos = el.length;
+	for (var i = 0; i < 100; i++) {
+		var pos = el.value.lastIndexOf("\n", pos) - 1;
+		if (pos < 0)
+			pos = 0;
+	}
+
+	el.value = value.substring(pos);
+}
+
 function jobl(message) {
 	var el = document.getElementById("job-output");
 
 	if (lastMessageIsStatus)
 		removeLastLine();
+
+	removeOldLines();
 
 	lastMessageIsStatus = false;
 
@@ -32,6 +48,8 @@ function jobs(message) {
 
 	if (lastMessageIsStatus)
 		removeLastLine();
+
+	removeOldLines();
 
 	lastMessageIsStatus = true;
 
@@ -54,33 +72,4 @@ function jobdone() {
 	el.style.pointerEvents = "auto";
 	el.style.opacity = 1;
 	el.style.cursor = "inherit";
-}
-
-function startSyncOperation(url) {
-	var source = new EventSource(url);
-	var opened = false;
-
-	source.onopen = function() {
-		opened = true;
-	}
-
-	source.onerror = function(ev) {
-		if (!opened) {
-			jobl("**** error ****");
-		}
-
-		source.close();
-		jobdone();
-	}
-
-	source.addEventListener("log", function(ev) {
-		var data = JSON.parse(ev.data);
-		jobl(data.message);
-	});
-
-	source.addEventListener("status", function(ev) {
-		var data = JSON.parse(ev.data);
-		//console.log("status: "+data.message);
-		jobs(data.message);
-	});
 }

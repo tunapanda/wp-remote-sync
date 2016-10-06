@@ -1,7 +1,6 @@
 <?php
 
 require_once __DIR__."/../model/RemoteResource.php";
-require_once __DIR__."/../utils/EventStream.php";
 
 /**
  * Handle user operations.

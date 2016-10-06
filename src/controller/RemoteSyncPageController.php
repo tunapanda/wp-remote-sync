@@ -2,6 +2,8 @@
 
 require_once __DIR__."/../../src/utils/Template.php";
 require_once __DIR__."/../../src/model/SyncResource.php";
+require_once __DIR__."/../../src/utils/ApacheUtil.php";
+require_once __DIR__."/../../src/utils/JobOutputLogger.php";
 
 use remotesync\Template;
 
@@ -20,11 +22,74 @@ class RemoteSyncPageController {
 	}
 
 	/**
+	 * Handle exception while syncing.
+	 */
+	function handleExceptionInSync($exception) {
+		$logger=RemoteSyncPlugin::instance()->getLogger();
+		$logger->message($exception->getMessage());
+		$logger->message($exception->getTraceAsString());
+		$logger->done();
+	}
+
+	/**
 	 * Show the sync job page.
 	 */
 	function showSync() {
 		$params=array();
 		Template::print(__DIR__."/../../tpl/sync.tpl.php",$params);
+
+		ApacheUtil::disableBuffering();
+		$logger=new JobOutputLogger();
+		RemoteSyncPlugin::instance()->setLogger($logger);
+		set_exception_handler(array($this,"handleExceptionInSync"));
+
+		$uniqueSlugs=$_REQUEST["slugs"];
+		if (!$uniqueSlugs)
+			$uniqueSlugs=array();
+
+		if (!$uniqueSlugs)
+			throw new Exception("Nothing to sync!");
+
+		$syncResources=SyncResource::findAllEnabled(
+			SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE
+		);
+
+		foreach ($syncResources as $syncResource) {
+			if (in_array($syncResource->getUniqueSlug(),$uniqueSlugs)) {
+				$logger->status("Syncing: ".$syncResource->getUniqueSlug());
+
+				$action=$_REQUEST["action"][$syncResource->getUniqueSlug()];
+
+				switch ($action) {
+					case "createOnLocal":
+						//$syncResource->createLocalResource();
+						break;
+
+					case "createOnRemote":
+						break;
+
+					case "deleteOnLocal":
+						break;
+
+					case "deleteOnRemote":
+						break;
+
+					case "download":
+						break;
+
+					case "upload":
+						break;
+
+					default:
+						throw new Exception("Unknown action: ".$action);
+						break;
+				}
+
+				$logger->message("Synced: ".$syncResource->getUniqueSlug());
+			}
+		}
+
+		$logger->done();
 	}
 
 	/**
@@ -67,6 +132,7 @@ class RemoteSyncPageController {
 				$state=$syncResource->getState();
 				if ($stateLabels[$state]) {
 					$resourceViewData=array(
+						"uniqueSlug"=>$syncResource->getUniqueSlug(),
 						"slug"=>$syncResource->getSlug(),
 						"stateLabel"=>$stateLabels[$state],
 						"conflict"=>FALSE

@@ -7,4 +7,8 @@
 <hr/>
 <textarea id="job-output"></textarea>
 <hr/>
-<a href='<?php echo get_site_url()."/wp-admin/options-general.php?page=rs_settings"?>' class='button' id='job-back-button'>Back</a>
+<a href='<?php echo admin_url("options-general.php?page=rs_main"); ?>' 
+	class='button' id='job-back-button'>Back</a>
+<script>
+<?php require __DIR__."/../wp-remote-sync.js"; ?>
+</script>

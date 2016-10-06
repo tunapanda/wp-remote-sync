@@ -308,6 +308,31 @@ class SyncResource extends SmartRecord {
 	}
 
 	/**
+	 * Get unique slug across resource types.
+	 */
+	public function getUniqueSlug() {
+		return $this->type.":".$this->slug;
+	}
+
+	/**
+	 * Find all resources for all enabled syncers.
+	 */
+	public static function findAllEnabled($findFlags) {
+		$resources=array();
+
+		foreach (RemoteSyncPlugin::instance()->getEnabledSyncers() as $syncer) {
+			$syncerResources=SyncResource::findAllForType(
+				$syncer->getType(),
+				$findFlags
+			);
+
+			$resources=array_merge($resources,$syncerResources);
+		}
+
+		return $resources;
+	}
+
+	/**
 	 * Find all for type.
 	 * Optionally populate with local and remote resource data.
 	 */
