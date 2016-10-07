@@ -6,7 +6,6 @@ require_once __DIR__."/../syncers/AttachmentSyncer.php";
 require_once __DIR__."/../syncers/H5pSyncer.php";
 require_once __DIR__."/../syncers/PluggableSyncer.php";
 require_once __DIR__."/../controller/RemoteSyncApi.php";
-require_once __DIR__."/../controller/RemoteSyncOperations.php";
 require_once __DIR__."/../utils/Curl.php";
 
 /**
@@ -20,7 +19,6 @@ class RemoteSyncPlugin extends Singleton {
 	public function __construct() {
 		$this->syncers=NULL;
 		$this->api=NULL;
-		$this->operations=NULL;
 		$this->logger=NULL;
 
 		$this->callMessage="Syncing...";
@@ -87,16 +85,6 @@ class RemoteSyncPlugin extends Singleton {
 			$this->api=new RemoteSyncApi();
 
 		return $this->api;
-	}
-
-	/**
-	 * Get reference to operations object.
-	 */
-	public function getOperations() {
-		if (!$this->operations)
-			$this->operations=new RemoteSyncOperations();
-
-		return $this->operations;
 	}
 
 	/**
