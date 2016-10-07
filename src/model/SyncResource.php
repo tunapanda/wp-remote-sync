@@ -508,6 +508,7 @@ class SyncResource extends SmartRecord {
 		$call->exec();
 
 		$this->baseRevision=md5(json_encode($this->getData()));
+		$this->save();
 	}
 
 	/**
@@ -518,6 +519,7 @@ class SyncResource extends SmartRecord {
 			->addPostField("type",$this->type)
 			->addPostField("slug",$this->slug)
 			->exec();
+		$this->delete();
 	}
 
 	/**

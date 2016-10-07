@@ -106,6 +106,7 @@ class RemoteSyncPageController {
 						break;
 
 					case "createOnRemote":
+						$syncResource->createRemoteResource();
 						break;
 
 					case "deleteOnLocal":
@@ -113,6 +114,7 @@ class RemoteSyncPageController {
 						break;
 
 					case "deleteOnRemote":
+						$syncResource->deleteRemoteResource();
 						break;
 
 					case "download":
