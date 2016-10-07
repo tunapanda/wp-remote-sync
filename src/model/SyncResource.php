@@ -524,8 +524,11 @@ class SyncResource extends SmartRecord {
 
 	/**
 	 * Update remote resource.
+	 * Override remote changes.
 	 */
 	function updateRemoteResource() {
+		$this->baseRevision=$this->getRemoteRevision();
+
 		$call=RemoteSyncPlugin::instance()->remoteCall("put")
 			->addPostField("type",$this->type)
 			->addPostField("slug",$this->slug)
@@ -537,6 +540,7 @@ class SyncResource extends SmartRecord {
 		$call->exec();
 
 		$this->baseRevision=md5(json_encode($this->getData()));
+		$this->save();
 	}
 
 	/**

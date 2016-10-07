@@ -121,7 +121,9 @@ class RemoteSyncPageController {
 						$syncResource->updateLocalResource();
 						break;
 
+					// what to do about the base rev? we can't just upload if there is a conflict...
 					case "upload":
+						$syncResource->updateRemoteResource();
 						break;
 
 					default:
