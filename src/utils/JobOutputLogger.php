@@ -6,6 +6,13 @@
 class JobOutputLogger {
 
 	/**
+	 * Log.
+	 */
+	public function log($message) {
+		$this->message($message);
+	}
+
+	/**
 	 * Show a message.
 	 */
 	public function message($message) {

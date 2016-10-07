@@ -51,7 +51,135 @@ class SyncResourceTest extends WP_UnitTestCase {
 		RemoteSyncPlugin::instance()->setLogger(new MockJob());
 	}
 
-	// why failing?
+	function test_createLocalResource() {
+		global $wpdb;
+
+		RemoteSyncPlugin::instance()->setLogger(new MockJob());
+		RemoteSyncPlugin::instance()->syncers=array(new AttachmentSyncer());
+		RemoteSyncPlugin::instance()->install();
+
+		$data=array(
+			"post_title"=>"the-slug",
+			"post_name"=>"the-slug",
+			"post_mime_type"=>"image/png",
+			"_wp_attached_file"=>"2016/10/supersampling_2.png",
+			"_wp_attachment_metadata"=>"**** this is dummy data ***",
+		);
+
+		$rev=md5(json_encode($data));
+
+		Curl::mockResult(array(
+			array("slug"=>"the-slug","revision"=>$rev)
+		));
+
+		Curl::mockResult(array(
+			"slug"=>"the-slug",
+			"revision"=>$rev,
+			"type"=>"attachment",
+			"data"=>$data,
+			"attachments"=>array(
+				array(
+					"fileName"=>"an/attached/file.txt",
+					"fileSize"=>123
+				)
+			),
+			"binary"=>FALSE
+		));
+
+		update_option("rs_remote_site_url","http://example.com/");
+
+		$syncResources=SyncResource::findAllForType("attachment",
+			SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE);
+
+		$this->assertEquals(1,sizeof($syncResources));
+		$syncResource=$syncResources[0];
+		$this->assertEquals($syncResource->getState(),SyncResource::NEW_REMOTE);
+
+		$fileContent=md5(rand());
+		Curl::mockResult($fileContent);
+
+		$upload_dir_info=wp_upload_dir();
+		$upload_base_dir=$upload_dir_info["basedir"];
+		if (file_exists($upload_base_dir."/an/attached/file.txt"))
+			unlink($upload_base_dir."/an/attached/file.txt");
+
+		$syncResource->createLocalResource();
+
+		$this->assertTrue(file_exists($upload_base_dir."/an/attached/file.txt"));
+		$content=file_get_contents($upload_base_dir."/an/attached/file.txt");
+		$this->assertEquals($content,$fileContent);
+
+		$res=$wpdb->get_results("SELECT * FROM {$wpdb->prefix}posts WHERE post_title='the-slug'");
+		$this->assertCount(1,$res);
+
+		$res=$wpdb->get_results("SELECT * FROM {$wpdb->prefix}syncresource");
+		$this->assertCount(1,$res);
+	}
+
+	// If the download doesn't work, the created resource should be deleted.
+	function test_createLocalResourceFailingDownload() {
+		global $wpdb;
+
+		RemoteSyncPlugin::instance()->setLogger(new MockJob());
+		RemoteSyncPlugin::instance()->syncers=array(new AttachmentSyncer());
+		RemoteSyncPlugin::instance()->install();
+
+		$data=array(
+			"post_title"=>"the-slug",
+			"post_name"=>"the-slug",
+			"post_mime_type"=>"image/png",
+			"_wp_attached_file"=>"2016/10/supersampling_2.png",
+			"_wp_attachment_metadata"=>"**** this is dummy data ***",
+		);
+
+		$rev=md5(json_encode($data));
+
+		Curl::mockResult(array(
+			array("slug"=>"the-slug","revision"=>$rev)
+		));
+
+		Curl::mockResult(array(
+			"slug"=>"the-slug",
+			"revision"=>$rev,
+			"type"=>"attachment",
+			"data"=>$data,
+			"attachments"=>array(
+				array(
+					"fileName"=>"an/attached/file.txt",
+					"fileSize"=>123
+				)
+			),
+			"binary"=>FALSE
+		));
+
+		update_option("rs_remote_site_url","http://example.com/");
+
+		$syncResources=SyncResource::findAllForType("attachment",
+			SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE);
+
+		$this->assertEquals(1,sizeof($syncResources));
+		$syncResource=$syncResources[0];
+		$this->assertEquals($syncResource->getState(),SyncResource::NEW_REMOTE);
+
+		$caught=FALSE;
+
+		try {
+			$syncResource->createLocalResource();
+		}
+
+		catch (Exception $e) {
+			$caught=TRUE;
+			$res=$wpdb->get_results("SELECT * FROM {$wpdb->prefix}posts WHERE post_title='the-slug'");
+			$this->assertCount(0,$res);
+
+			$res=$wpdb->get_results("SELECT * FROM {$wpdb->prefix}syncresource");
+			$this->assertCount(0,$res);
+		}
+
+		$this->assertTrue($caught);
+	}
+
+	// downloadAttachments is private
 	/*function test_downloadAttachments() {
 		global $wpdb;
 
@@ -96,18 +224,18 @@ class SyncResourceTest extends WP_UnitTestCase {
 
 		$upload_dir_info=wp_upload_dir();
 		$upload_base_dir=$upload_dir_info["basedir"];
-		if (file_exists($upload_base_dir."/h5p/content/777//an/attached/file.txt"))
-			unlink($upload_base_dir."/h5p/content/777//an/attached/file.txt");
+		if (file_exists($upload_base_dir."/an/attached/file.txt"))
+			unlink($upload_base_dir."/an/attached/file.txt");
 
 		Curl::mockResult("hello world");
 		$syncResource->downloadAttachments();
 
-		$this->assertTrue(file_exists($upload_base_dir."/h5p/content/777//an/attached/file.txt"));
-		$content=file_get_contents($upload_base_dir."/h5p/content/777//an/attached/file.txt");
+		$this->assertTrue(file_exists($upload_base_dir."/an/attached/file.txt"));
+		$content=file_get_contents($upload_base_dir."/an/attached/file.txt");
 		$this->assertEquals($content,"hello world");
 	}*/
 
-	// Not sure why this is failing...
+	// Not sure why failing. 
 	/*function test_postedAttachments() {
 		RemoteSyncPlugin::instance()->syncers=NULL;
 		RemoteSyncPlugin::instance()->install();

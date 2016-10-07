@@ -163,7 +163,7 @@ class SyncResource extends SmartRecord {
 				throw new Exception("Unable to create directory: ".$dir);
 		}
 
-		file_put_contents($targetFileName,"hello world");
+		//file_put_contents($targetFileName,"hello world");
 
 		$res=RemoteSyncPlugin::instance()->remoteCall("getAttachment")
 			->addPostField("attachment",$attachmentFileName)
@@ -189,7 +189,7 @@ class SyncResource extends SmartRecord {
 	/**
 	 * Download attachments from remote.
 	 */
-	public function downloadAttachments() {
+	private function downloadAttachments() {
 		if (!$this->getRemoteResource())
 			throw new Exception("Can't download attachments, doesn't exist remote: ".$this->slug);
 
@@ -404,6 +404,8 @@ class SyncResource extends SmartRecord {
 
 	/**
 	 * Create local resource with remote data.
+	 * Download attachments related to the resource.
+	 * Saves the resource to the database.
 	 */
 	function createLocalResource() {
 		$slug=$this->getRemoteResource()->getSlug();
@@ -436,10 +438,23 @@ class SyncResource extends SmartRecord {
 
 			throw new Exception($slug.": Local revision differ from remote after create.");
 		}
+
+		try {
+			$this->downloadAttachments();
+		}
+
+		catch (Exception $e) {
+			$this->deleteLocalResource();
+			throw $e;
+		}
+
+		$this->save();
 	}
 
 	/**
 	 * Update local resource with remote data.
+	 * Download any attachments and stor the resource in the database.
+	 * TODO: restore local data on failure.
 	 */
 	function updateLocalResource() {
 		$binaryDataFileName=$this->getRemoteResource()->downloadBinaryData();
@@ -447,7 +462,6 @@ class SyncResource extends SmartRecord {
 			$this->getRemoteResource()->getData(),
 			$binaryDataFileName
 		);
-
 
 		$this->getSyncer()->updateResource(
 			$this->getRemoteResource()->getSlug(),
@@ -460,8 +474,16 @@ class SyncResource extends SmartRecord {
 		$this->localDataFetched=FALSE;
 		$this->baseRevision=$this->getLocalRevision();
 
-		if ($this->getRemoteRevision()!=$this->getLocalRevision())
-			throw new Exception("Local revision differ from remote after update\nlocal: ".json_encode($this->getData())."\n remote: ".json_encode($this->getRemoteResource()->getData()));
+		if ($this->getRemoteRevision()!=$this->getLocalRevision()) {
+			throw new Exception(
+				"Local revision differ from remote after update\n".
+				"local: ".json_encode($this->getData())."\n".
+				"remote: ".json_encode($this->getRemoteResource()->getData())
+			);
+		}
+
+		$this->downloadAttachments();
+		$this->save();
 	}
 
 	/**
@@ -469,6 +491,7 @@ class SyncResource extends SmartRecord {
 	 */
 	function deleteLocalResource() {
 		$this->getSyncer()->deleteResource($this->slug);
+		$this->delete();
 	}
 
 	/**

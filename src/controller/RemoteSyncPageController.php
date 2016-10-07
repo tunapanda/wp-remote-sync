@@ -102,19 +102,21 @@ class RemoteSyncPageController {
 
 				switch ($action) {
 					case "createOnLocal":
-						//$syncResource->createLocalResource();
+						$syncResource->createLocalResource();
 						break;
 
 					case "createOnRemote":
 						break;
 
 					case "deleteOnLocal":
+						$syncResource->deleteLocalResource();
 						break;
 
 					case "deleteOnRemote":
 						break;
 
 					case "download":
+						$syncResource->updateLocalResource();
 						break;
 
 					case "upload":
@@ -154,20 +156,29 @@ class RemoteSyncPageController {
 			foreach ($syncResources as $syncResource) {
 				$state=$syncResource->getState();
 
-				$actions=array();
-				foreach (RemoteSyncPageController::APPLICABLE_ACTIONS[$state] as $action) {
-					$actions[$action]=RemoteSyncPageController::ACTION_LABELS[$action];
+				if ($state==SyncResource::GARBAGE) {
+					$syncResource->delete();
 				}
 
-				if (RemoteSyncPageController::STATE_LABELS[$state]) {
-					$resourceViewData=array(
-						"uniqueSlug"=>$syncResource->getUniqueSlug(),
-						"slug"=>$syncResource->getSlug(),
-						"stateLabel"=>RemoteSyncPageController::STATE_LABELS[$state],
-						"actions"=>$actions
-					);
+				else if ($state!=SyncResource::UP_TO_DATE) {
+					$actions=array();
+					foreach (RemoteSyncPageController::APPLICABLE_ACTIONS[$state] as $action) {
+						$actions[$action]=RemoteSyncPageController::ACTION_LABELS[$action];
+					}
 
-					$resourceViewDatas[]=$resourceViewData;
+					if (!$actions)
+						throw new Exception("No actions to apply.");
+
+					if (RemoteSyncPageController::STATE_LABELS[$state]) {
+						$resourceViewData=array(
+							"uniqueSlug"=>$syncResource->getUniqueSlug(),
+							"slug"=>$syncResource->getSlug(),
+							"stateLabel"=>RemoteSyncPageController::STATE_LABELS[$state],
+							"actions"=>$actions
+						);
+
+						$resourceViewDatas[]=$resourceViewData;
+					}
 				}
 			}
 
