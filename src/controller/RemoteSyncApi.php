@@ -98,6 +98,8 @@ class RemoteSyncApi {
 				"revision"=>$syncResource->getLocalRevision()
 			);
 
+		sleep(1);
+
 		return $res;
 	}
 

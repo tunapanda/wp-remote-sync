@@ -1,3 +1,6 @@
+<script>
+	document.getElementById("rs-resourcelist-loading").style.display="none";
+</script>
 <div class="wrap">
     <h2>Remote Sync</h2>
     <?php if (!$resources) { ?>
