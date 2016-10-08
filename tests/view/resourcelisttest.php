@@ -9,13 +9,13 @@ $resources=array(
 		array(
 			"slug"=>"my-post",
 			"stateLabel"=>"Locally created",
-			"actionLabel"=>"Upload locate version to remote"
+			"actions"=>array("action1"=>"Action 1")
 		),
 
 		array(
 			"slug"=>"my-other-post",
 			"stateLabel"=>"Remotely created",
-			"actionLabel"=>"Download remote version to local"
+			"actions"=>array("action1"=>"Action 1")
 		),
 	),
 
@@ -23,31 +23,31 @@ $resources=array(
 		array(
 			"slug"=>"an-image",
 			"stateLabel"=>"Locally deleted",
-			"actionLabel"=>"Delete remote version too"
+			"actions"=>array("action1"=>"Action 1")
 		),
 
 		array(
 			"slug"=>"another-image",
 			"stateLabel"=>"Remotely deleted",
-			"actionLabel"=>"Delete local version too"
+			"actions"=>array("action1"=>"Action 1")
 		),
 
 		array(
 			"slug"=>"a-third-image",
 			"stateLabel"=>"Locally updated",
-			"actionLabel"=>"Upload locate version to remote"
+			"actions"=>array("action1"=>"Action 1")
 		),
 
 		array(
 			"slug"=>"a-forth-image",
 			"stateLabel"=>"Remotely updated",
-			"actionLabel"=>"Download remote version to local"
+			"actions"=>array("action1"=>"Action 1")
 		),
 
 		array(
 			"slug"=>"something else",
 			"stateLabel"=>"Updated on both servers",
-			"conflict"=>TRUE
+			"actions"=>array("action1"=>"Action 1","action2"=>"Action 2")
 		),
 	),
 );

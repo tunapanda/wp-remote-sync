@@ -61,9 +61,12 @@
 						<?php foreach ($categoryResources as $resource) { ?>
 							<tr>
 								<th scope='row' class='check-column'>
-									<input type='checkbox' checked="true"
+									<input type='checkbox'
 										name="slugs[]"
 										value="<?php echo $resource["uniqueSlug"]; ?>"
+										<?php if (sizeof($resource["actions"])<=1) { ?>
+											checked="true"
+										<?php } ?>
 									/>
 								</th>
 								<td><?php echo $resource["slug"];?></td>

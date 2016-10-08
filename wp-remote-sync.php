@@ -90,7 +90,19 @@ function rs_sync() {
  * Test view.
  */
 function rs_view_test() {
-	require __DIR__."/tests/view/resourcelisttest.php";
+	switch ($_REQUEST["case"]) {
+		case "syncpreview":
+			require __DIR__."/tests/view/resourcelisttest.php";
+			break;
+
+		case "sync":
+			require __DIR__."/tests/view/synctest.php";
+			break;
+
+		default:
+			echo "No such test case.";
+			exit;
+	}
 }
 
 add_action('admin_menu','rs_admin_menu');

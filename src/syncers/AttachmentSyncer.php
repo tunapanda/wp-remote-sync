@@ -119,7 +119,6 @@ class AttachmentSyncer extends AResourceSyncer {
 		if ($updateInfo->isCreate()) {
 			$localId=wp_insert_post(array(
 				"post_name"=>$slug,
-/*				"guid"=>$data["guid"],*/
 				"post_title"=>$data["post_title"],
 				"post_mime_type"=>$data["post_mime_type"],
 				"post_type"=>"attachment"
