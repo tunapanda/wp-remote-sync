@@ -113,6 +113,9 @@ class PostSyncer extends AResourceSyncer {
 		if (!$post)
 			return NULL;
 
+		if ($post->post_status=="trash" || $post->post_status=="inherit")
+			return NULL;
+
 		return $post->post_name;
 	}
 
@@ -129,9 +132,9 @@ class PostSyncer extends AResourceSyncer {
 			throw new Exception("post not found: id=".$postId);
 
 		if (!$post->post_parent)
-			return $postId;
+			return $this->getSlugById($postId);
 
-		return $this->getPostPath($post->post_parent)."/".$postId;
+		return $this->getPostPath($post->post_parent)."/".$this->getSlugById($postId);
 	}
 
 	/**

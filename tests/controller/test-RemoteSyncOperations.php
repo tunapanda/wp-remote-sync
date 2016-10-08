@@ -16,7 +16,7 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 		RemoteSyncPlugin::instance()->install();
 
 		Curl::mockResult(array(
-			array("slug"=>"the-slug","revision"=>"5")
+			array("slug"=>"the-slug","revision"=>"5","weight"=>"")
 		));
 		Curl::mockResult(array());
 
@@ -50,7 +50,7 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 		$rev=md5(json_encode($data));
 
 		Curl::mockResult(array(
-			array("slug"=>"the-slug","revision"=>$rev)
+			array("slug"=>"the-slug","revision"=>$rev,"weight"=>"")
 		));
 		Curl::mockResult(array(
 			"slug"=>"the-slug",
@@ -92,7 +92,7 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 		$rev=md5(json_encode($data));
 
 		Curl::mockResult(array(
-			array("slug"=>"the-slug","revision"=>$rev)
+			array("slug"=>"the-slug","revision"=>$rev,"weight"=>"")
 		));
 		Curl::mockResult(array(
 			"slug"=>"the-slug",
@@ -155,7 +155,7 @@ class RemoteSyncOperationsTest extends WP_UnitTestCase {
 		wp_trash_post($postId);
 		Curl::initMock();
 		Curl::mockResult(array(
-			array("slug"=>'the-slug','revision'=>"hello")
+			array("slug"=>'the-slug','revision'=>"hello","weight"=>"")
 		));
 		Curl::mockResult(array());
 		Curl::mockResult(array());

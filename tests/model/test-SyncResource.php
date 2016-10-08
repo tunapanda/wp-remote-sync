@@ -197,8 +197,8 @@ class SyncResourceTest extends WP_UnitTestCase {
 		update_option("rs_remote_site_url","helloworld");
 
 		Curl::mockResult(array(
-			array("slug"=>"onlyremote","revision"=>123),
-			array("slug"=>"slug1","revision"=>123)
+			array("slug"=>"onlyremote","revision"=>123,"weight"=>""),
+			array("slug"=>"slug1","revision"=>123,"weight"=>"")
 		));
 
 		RemoteSyncPlugin::instance()->syncers=array(new SRTestSyncer("testType"));
@@ -246,8 +246,8 @@ class SyncResourceTest extends WP_UnitTestCase {
 		$rev=md5(json_encode($data));
 
 		Curl::mockResult(array(
-			array("slug"=>"onlyremote","revision"=>"05a1ad082ad35cad7aac7b18e232feb3"),
-			array("slug"=>"slug1","revision"=>$rev)
+			array("slug"=>"onlyremote","revision"=>"05a1ad082ad35cad7aac7b18e232feb3","weight"=>""),
+			array("slug"=>"slug1","revision"=>$rev,"weight"=>"")
 		));
 
 		$syncResources=SyncResource::findAllForType("testType",
