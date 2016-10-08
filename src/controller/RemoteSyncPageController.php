@@ -144,17 +144,10 @@ class RemoteSyncPageController {
 	 * Show the list of syncable resources.
 	 */
 	function showSyncPreview() {
-		//set_exception_handler(array($this,"handleExceptionInResourceList"));
-
-		echo "sshowing stuff";
+		set_exception_handler(array($this,"handleExceptionInResourceList"));
 
 		Template::display(__DIR__."/../../tpl/resourcelist_loading.tpl.php",$params);
-
-		echo "disabling buffering<br>";
-
 		ApacheUtil::disableBuffering();
-
-		echo "here...";
 
 		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();
 		$resourceViewCategoryDatas=array();
