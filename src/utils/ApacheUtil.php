@@ -15,9 +15,9 @@
 /*			if (function_exists("apache_setenv"))
 				@apache_setenv('no-gzip', 1);*/
 
-			echo "after";
-
 			@apache_setenv('no-gzip', 1);
+
+			echo "after";
 
 			@ini_set('zlib.output_compression', 0);
 			@ini_set('implicit_flush', 1);
