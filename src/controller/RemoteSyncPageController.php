@@ -90,7 +90,7 @@ class RemoteSyncPageController {
 				$state=$syncResource->getState();
 				$action=$_REQUEST["action"][$syncResource->getUniqueSlug()];
 				$actionLabel=self::$actionLabels[$action];
-				$applicableActions=self::applicableActions[$state];
+				$applicableActions=self::$applicableActions[$state];
 
 				if (!in_array($action,$applicableActions))
 					throw new Exception(sprintf("%s: Action '%s' not applicable in state '%s', expected: %s",
