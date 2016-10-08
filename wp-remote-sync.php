@@ -96,6 +96,7 @@ function rs_view_test() {
 			break;
 
 		case "sync":
+//			echo "hello";
 			require __DIR__."/tests/view/synctest.php";
 			break;
 
@@ -123,3 +124,5 @@ function rs_uninstall() {
 
 register_activation_hook(__FILE__,'rs_activate');
 register_uninstall_hook(__FILE__,'rs_uninstall');
+
+header('X-Accel-Buffering: no');
