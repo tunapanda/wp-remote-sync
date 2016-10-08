@@ -10,8 +10,12 @@
 		public static function disableBuffering() {
 			//header('X-Accel-Buffering: no');
 
+			echo "before";
+
 /*			if (function_exists("apache_setenv"))
 				@apache_setenv('no-gzip', 1);*/
+
+			echo "after";
 
 			@apache_setenv('no-gzip', 1);
 
