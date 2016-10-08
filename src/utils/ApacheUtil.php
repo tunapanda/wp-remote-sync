@@ -8,7 +8,10 @@
 		 * Contents currently in the buffer will be discarded.
 		 */
 		public static function disableBuffering() {
-			@apache_setenv('no-gzip', 1);
+
+			if (function_exists("apache_setenv"))
+				@apache_setenv('no-gzip', 1);
+
 			@ini_set('zlib.output_compression', 0);
 			@ini_set('implicit_flush', 1);
 			$levels=ob_get_level();
