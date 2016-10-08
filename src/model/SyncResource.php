@@ -1,13 +1,13 @@
 <?php
 
-require_once __DIR__."/../../ext/smartrecord/SmartRecord.php";
+require_once __DIR__."/../../ext/wprecord/WpRecord.php";
 require_once __DIR__."/RemoteResource.php";
 require_once __DIR__."/../plugin/ResourceUpdateInfo.php";
 
 /**
  * Manage one synced resouce.
  */
-class SyncResource extends SmartRecord {
+class SyncResource extends WpRecord {
 
 	const POPULATE_LOCAL=1;
 	const POPULATE_REMOTE=2;

@@ -1,3 +1,8 @@
+<script>
+    var e=document.getElementById("rs-resourcelist-loading");
+    if (e)
+        e.style.display="none";
+</script>
 <div class="wrap">
     <h2>Remote Sync</h2>
 
