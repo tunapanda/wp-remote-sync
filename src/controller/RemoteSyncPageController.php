@@ -65,7 +65,7 @@ class RemoteSyncPageController {
 	 */
 	function showSync() {
 		$params=array();
-		Template::print(__DIR__."/../../tpl/sync.tpl.php",$params);
+		Template::display(__DIR__."/../../tpl/sync.tpl.php",$params);
 
 		ApacheUtil::disableBuffering();
 		$logger=new JobOutputLogger();
@@ -146,8 +146,7 @@ class RemoteSyncPageController {
 	function showSyncPreview() {
 		set_exception_handler(array($this,"handleExceptionInResourceList"));
 
-		Template::print(__DIR__."/../../tpl/resourcelist_loading.tpl.php",$params);
-
+		Template::display(__DIR__."/../../tpl/resourcelist_loading.tpl.php",$params);
 		ApacheUtil::disableBuffering();
 
 		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();
@@ -200,7 +199,7 @@ class RemoteSyncPageController {
 			"resources"=>$resourceViewCategoryDatas
 		);
 
-		Template::print(__DIR__."/../../tpl/resourcelist.tpl.php",$params);
+		Template::display(__DIR__."/../../tpl/resourcelist.tpl.php",$params);
 	}
 
 	/**
@@ -231,6 +230,6 @@ class RemoteSyncPageController {
 			}
 		}
 
-		Template::print(__DIR__."/../../tpl/main.tpl.php",$params);
+		Template::display(__DIR__."/../../tpl/main.tpl.php",$params);
 	}
 }

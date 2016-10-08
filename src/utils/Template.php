@@ -20,9 +20,9 @@ class Template {
 	}
 
 	/**
-	 * Echo out the rendered template.
+	 * Display the rendered template.
 	 */
-	public static function print($fn, $vars=array()) {
+	public static function display($fn, $vars=array()) {
 		if (!$vars)
 			$vars=array();
 

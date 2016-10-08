@@ -56,4 +56,4 @@ $params=array(
 	"resources"=>$resources
 );
 
-Template::print(__DIR__."/../../tpl/resourcelist.tpl.php",$params);
+Template::display(__DIR__."/../../tpl/resourcelist.tpl.php",$params);
