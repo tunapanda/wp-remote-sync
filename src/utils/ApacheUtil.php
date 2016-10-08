@@ -8,6 +8,7 @@
 		 * Contents currently in the buffer will be discarded.
 		 */
 		public static function disableBuffering() {
+			header('X-Accel-Buffering: no');
 
 			if (function_exists("apache_setenv"))
 				@apache_setenv('no-gzip', 1);
