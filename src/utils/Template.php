@@ -23,6 +23,9 @@ class Template {
 	 * Echo out the rendered template.
 	 */
 	public static function print($fn, $vars=array()) {
+		if (!$vars)
+			$vars=array();
+
 		foreach ($vars as $key=>$value)
 			$$key=$value;
 

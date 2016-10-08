@@ -12,7 +12,7 @@ use remotesync\Template;
  */
 class RemoteSyncPageController {
 
-	const STATE_LABELS=array(
+	private static $stateLabels=array(
 		SyncResource::NEW_LOCAL=>"Locally created",
 		SyncResource::NEW_REMOTE=>"Remotely created",
 		SyncResource::DELETED_LOCAL=>"Locally deleted",
@@ -22,7 +22,7 @@ class RemoteSyncPageController {
 		SyncResource::CONFLICT=>"Updated on both servers",
 	);
 
-	const APPLICABLE_ACTIONS=array(
+	private static $applicableActions=array(
 		SyncResource::NEW_LOCAL=>array("createOnRemote"),
 		SyncResource::NEW_REMOTE=>array("createOnLocal"),
 		SyncResource::DELETED_LOCAL=>array("deleteOnRemote"),
@@ -32,7 +32,7 @@ class RemoteSyncPageController {
 		SyncResource::CONFLICT=>array("download","upload")
 	);
 
-	const ACTION_LABELS=array(
+	private static $actionLabels=array(
 		"createOnRemote"=>"Upload local, create on remote",
 		"createOnLocal"=>"Download remote, create on local",
 		"deleteOnRemote"=>"Delete remote version too",
@@ -46,7 +46,7 @@ class RemoteSyncPageController {
 	 */
 	function handleExceptionInResourceList($exception) {
 		$this->errorMessage=$exception->getMessage();
-		// echo $exception->getTraceAsString());
+		$this->errorMessage.="<br>".nl2br($exception->getTraceAsString());
 		$this->showMain();
 	}
 
@@ -89,14 +89,14 @@ class RemoteSyncPageController {
 
 				$state=$syncResource->getState();
 				$action=$_REQUEST["action"][$syncResource->getUniqueSlug()];
-				$actionLabel=RemoteSyncPageController::ACTION_LABELS[$action];
-				$applicableActions=RemoteSyncPageController::APPLICABLE_ACTIONS[$state];
+				$actionLabel=self::$actionLabels[$action];
+				$applicableActions=self::applicableActions[$state];
 
 				if (!in_array($action,$applicableActions))
 					throw new Exception(sprintf("%s: Action '%s' not applicable in state '%s', expected: %s",
 							$syncResource->getSlug(),
-							RemoteSyncPageController::ACTION_LABELS[$action],
-							RemoteSyncPageController::STATE_LABELS[$state],
+							self::$actionLabels[$action][$action],
+							self::$stateLabels[$state],
 							join(",",$applicableActions)
 						));
 
@@ -170,18 +170,18 @@ class RemoteSyncPageController {
 
 				else if ($state!=SyncResource::UP_TO_DATE) {
 					$actions=array();
-					foreach (RemoteSyncPageController::APPLICABLE_ACTIONS[$state] as $action) {
-						$actions[$action]=RemoteSyncPageController::ACTION_LABELS[$action];
+					foreach (self::$applicableActions[$state] as $action) {
+						$actions[$action]=self::$actionLabels[$action];
 					}
 
 					if (!$actions)
 						throw new Exception("No actions to apply.");
 
-					if (RemoteSyncPageController::STATE_LABELS[$state]) {
+					if (self::$stateLabels[$state]) {
 						$resourceViewData=array(
 							"uniqueSlug"=>$syncResource->getUniqueSlug(),
 							"slug"=>$syncResource->getSlug(),
-							"stateLabel"=>RemoteSyncPageController::STATE_LABELS[$state],
+							"stateLabel"=>self::$stateLabels[$state],
 							"actions"=>$actions
 						);
 
