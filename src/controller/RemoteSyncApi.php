@@ -95,7 +95,8 @@ class RemoteSyncApi {
 		foreach ($syncResources as $syncResource)
 			$res[]=array(
 				"slug"=>$syncResource->getSlug(),
-				"revision"=>$syncResource->getLocalRevision()
+				"revision"=>$syncResource->getLocalRevision(),
+				"weight"=>$syncResource->getWeight()
 			);
 
 		//sleep(1);
@@ -294,8 +295,6 @@ class RemoteSyncApi {
 	 * Handle the Api Response
 	 */
 	public function doApiCall($call, $params){
-
-
 		$res = array();
 		if (!array_key_exists("key", $params) ||
 				$params["key"] != get_option("rs_incoming_access_key","")) {
@@ -306,7 +305,8 @@ class RemoteSyncApi {
 				$params["version"]!=RemoteSyncPlugin::instance()->getProtocolVersion()) {
 			throw new Exception(
 				"Your local version of wp-remote-sync is not compatible ".
-				"with the version installed on this remote server."
+				"with the version installed on this remote server. ".
+				"Server version: ".RemoteSyncPlugin::instance()->getProtocolVersion()
 			);
 
 		}

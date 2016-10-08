@@ -8,9 +8,10 @@ require_once __DIR__."/Attachment.php";
 class RemoteResource {
 
 	/**
-	 * Consruct
+	 * Consruct.
+	 * It is private, use fetchAllForType.
 	 */
-	public function __construct($type, $slug, $revision) {
+	private function __construct($type, $slug, $revision, $weight) {
 		if (!$slug)
 			throw new Exception("no slug in RemoteResource constr...");
 
@@ -22,6 +23,14 @@ class RemoteResource {
 		$this->revision=$revision;
 		$this->data=NULL;
 		$this->fetched=FALSE;
+		$this->weight=$weight;
+	}
+
+	/**
+	 * Get weight.
+	 */
+	public function getWeight() {
+		return $this->weight;
 	}
 
 	/**
@@ -146,7 +155,7 @@ class RemoteResource {
 			if ($logger)
 				$logger->log(print_r($info,TRUE));*/
 
-			$remoteResource=new RemoteResource($type,$info["slug"],$info["revision"]);
+			$remoteResource=new RemoteResource($type,$info["slug"],$info["revision"],$info["weight"]);
 			$remoteResources[]=$remoteResource;
 		}
 

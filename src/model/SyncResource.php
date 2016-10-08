@@ -285,24 +285,30 @@ class SyncResource extends WpRecord {
 	}
 
 	/**
+	 * Get sort weight.
+	 * If we have local data, use the local weight.
+	 * If not, use the remote weight.
+	 * Does this work in all cases?
+	 */
+	public function getWeight() {
+		if ($this->getData())
+			return $this->getSyncer()->getResourceWeight($this->slug);
+
+		if ($this->remoteResource)
+			return $this->remoteResource->getWeight();
+
+		return "";
+	}
+
+	/**
 	 * Compare resource weight.
 	 */
 	private static function cmpResourceWeight($a, $b) {
-		if (!isset($a->__weight)) {
-			if ($a->getData())
-				$a->__weight=$a->getSyncer()->getResourceWeight($a->getSlug());
+		if (!isset($a->__weight))
+			$a->__weight=$a->getWeight();
 
-			else
-				$a->__weight="";
-		}
-
-		if (!isset($b->__weight)) {
-			if ($b->getData())
-				$b->__weight=$b->getSyncer()->getResourceWeight($b->getSlug());
-
-			else
-				$b->__weight="";
-		}
+		if (!isset($b->__weight))
+			$b->__weight=$b->getWeight();
 
 		return strcmp($a->__weight,$b->__weight);
 	}
@@ -357,8 +363,6 @@ class SyncResource extends WpRecord {
 			}
 		}
 
-		usort($syncResources,"SyncResource::cmpResourceWeight");
-
 		if ($findFlags&SyncResource::POPULATE_REMOTE) {
 			$remoteResources=RemoteResource::fetchAllForType($type);
 
@@ -391,6 +395,8 @@ class SyncResource extends WpRecord {
 					$syncResources[]=$syncResource;
 			}
 		}
+
+		usort($syncResources,"SyncResource::cmpResourceWeight");
 
 		return $syncResources;
 	}
