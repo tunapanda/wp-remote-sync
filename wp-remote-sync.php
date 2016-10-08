@@ -126,4 +126,4 @@ register_activation_hook(__FILE__,'rs_activate');
 register_uninstall_hook(__FILE__,'rs_uninstall');
 
 header('X-Accel-Buffering: no');
-header("Content-Encoding: identity");
+//header("Content-Encoding: identity");
