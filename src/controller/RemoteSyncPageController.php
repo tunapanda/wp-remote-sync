@@ -146,6 +146,8 @@ class RemoteSyncPageController {
 	function showSyncPreview() {
 		set_exception_handler(array($this,"handleExceptionInResourceList"));
 
+		echo "sshowing stuff";
+
 		Template::display(__DIR__."/../../tpl/resourcelist_loading.tpl.php",$params);
 		ApacheUtil::disableBuffering();
 
