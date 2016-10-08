@@ -149,6 +149,8 @@ class RemoteSyncPageController {
 		Template::display(__DIR__."/../../tpl/resourcelist_loading.tpl.php",$params);
 		ApacheUtil::disableBuffering();
 
+		echo "here...";
+
 		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();
 		$resourceViewCategoryDatas=array();
 
