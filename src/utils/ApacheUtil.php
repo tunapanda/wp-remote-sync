@@ -10,8 +10,10 @@
 		public static function disableBuffering() {
 			//header('X-Accel-Buffering: no');
 
-			if (function_exists("apache_setenv"))
-				@apache_setenv('no-gzip', 1);
+/*			if (function_exists("apache_setenv"))
+				@apache_setenv('no-gzip', 1);*/
+
+			@apache_setenv('no-gzip', 1);
 
 			@ini_set('zlib.output_compression', 0);
 			@ini_set('implicit_flush', 1);
