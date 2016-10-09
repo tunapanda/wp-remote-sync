@@ -69,7 +69,7 @@ class SyncResourceTest extends WP_UnitTestCase {
 		$rev=md5(json_encode($data));
 
 		Curl::mockResult(array(
-			array("slug"=>"the-slug","revision"=>$rev)
+			array("slug"=>"the-slug","revision"=>$rev,"weight"=>"")
 		));
 
 		Curl::mockResult(array(
@@ -135,7 +135,7 @@ class SyncResourceTest extends WP_UnitTestCase {
 		$rev=md5(json_encode($data));
 
 		Curl::mockResult(array(
-			array("slug"=>"the-slug","revision"=>$rev)
+			array("slug"=>"the-slug","revision"=>$rev,"weight"=>"")
 		));
 
 		Curl::mockResult(array(
