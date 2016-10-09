@@ -1,9 +1,8 @@
 <html>
 	<body>
-		Testing buffering... There should be 10 lines, and they should appear one by one with 10
+		Testing buffering... There should be 10 lines, and they should appear one by one with 1
 		second intervals... If they appear all at once, it means that it is not possible to turn off
 		the buffering.<br><br>
-
 
 <?php
 
