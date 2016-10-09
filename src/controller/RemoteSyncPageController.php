@@ -67,6 +67,7 @@ class RemoteSyncPageController {
 		$params=array();
 		Template::display(__DIR__."/../../tpl/sync.tpl.php",$params);
 
+		set_time_limit(0);
 		ApacheUtil::disableBuffering();
 		$logger=new JobOutputLogger();
 		RemoteSyncPlugin::instance()->setLogger($logger);
