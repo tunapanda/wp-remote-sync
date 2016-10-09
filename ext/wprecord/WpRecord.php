@@ -188,7 +188,7 @@ if (!class_exists("WpRecord")) {
 			else
 				$s.="INSERT INTO $conf[table] SET ";
 
-			$params=[];
+			$params=array();
 
 			$first=TRUE;
 			foreach ($conf["fields"] as $field=>$declaration)
@@ -296,8 +296,8 @@ if (!class_exists("WpRecord")) {
 				$args=array($field=>$value);
 
 			$q="SELECT * FROM :table WHERE ";
-			$qa=[];
-			$params=[];
+			$qa=array();
+			$params=array();
 
 			foreach ($args as $key=>$value) {
 				$qa[]="$key=%s";
