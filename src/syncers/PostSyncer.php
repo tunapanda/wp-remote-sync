@@ -93,14 +93,13 @@ class PostSyncer extends AResourceSyncer {
 			"SELECT ID ".
 			"FROM   {$wpdb->prefix}posts ".
 			"WHERE  post_name=%s ".
-			"AND    post_status NOT IN ('trash','inherit')",$slug);
+			"AND    post_type IN ('post','page') ".
+			"AND    post_status NOT IN ('trash','inherit')",
+			$slug);
 		$id=$wpdb->get_var($q);
 
 		if ($wpdb->last_error)
 			throw new Exception($wpdb->last_error);
-
-		/*if (!$id)
-			throw new Exception("no post for: ".$slug);*/
 
 		return $id;
 	}
@@ -112,6 +111,9 @@ class PostSyncer extends AResourceSyncer {
 		$post=get_post($postId);
 		if (!$post)
 			return NULL;
+
+		if ($post->post_type!="page" && $post->post_type!="post")
+			throw new Exception("Expected type to be post or page, not: ".$post->post_type);
 
 		if ($post->post_status=="trash" || $post->post_status=="inherit")
 			return NULL;
@@ -179,7 +181,7 @@ class PostSyncer extends AResourceSyncer {
 	}
 
 	/**
-	 * Get post by local id.
+	 * Get post by slug.
 	 */
 	public function getResource($slug) {
 		$localId=$this->getIdBySlug($slug);
@@ -233,7 +235,8 @@ class PostSyncer extends AResourceSyncer {
 				throw new Exception($wpdb->last_error);
 
 			if ($row) {
-				if ($row->post_status=="trash" || $row->post_status=="inherit")
+				if ($row->post_status=="trash" &&
+					($row->post_type=="attachment"))
 					wp_delete_post($row->ID,TRUE);
 
 				else

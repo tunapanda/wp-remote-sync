@@ -20,7 +20,12 @@ class AttachmentSyncer extends AResourceSyncer {
 	private function getIdBySlug($slug) {
 		global $wpdb;
 
-		$q=$wpdb->prepare("SELECT ID FROM {$wpdb->prefix}posts WHERE post_name=%s",$slug);
+		$q=$wpdb->prepare(
+			"SELECT ID ".
+			"FROM   {$wpdb->prefix}posts ".
+			"WHERE  post_name=%s ".
+			"AND    post_type='attachment'",
+			$slug);
 		$id=$wpdb->get_var($q);
 
 		if ($wpdb->last_error)
@@ -111,12 +116,30 @@ class AttachmentSyncer extends AResourceSyncer {
 	 * Update a local resource with data.
 	 */
 	function updateResource($slug, $updateInfo) {
+		global $wpdb;
+
 		$data=$updateInfo->getData();
 
 		if ($slug!=$data["post_name"])
 			throw new Exception("Sanity check failed, slug!=post_name");
 
 		if ($updateInfo->isCreate()) {
+			// Check if it exists in trash, if so delete permanently,
+			// because we need the slug to be free.
+			$q=$wpdb->prepare("SELECT * FROM {$wpdb->prefix}posts WHERE post_name=%s",$slug);
+			$row=$wpdb->get_row($q);
+			if ($wpdb->last_error)
+				throw new Exception($wpdb->last_error);
+
+			if ($row) {
+				if (($row->post_status=="trash" || $row->post_status=="inherit") &&
+					($row->post_type=="page" || $row->post_type=="post"))
+					wp_delete_post($row->ID,TRUE);
+
+				else
+					throw new Exception("Slug not free, status=".$row->post_status);
+			}
+
 			$localId=wp_insert_post(array(
 				"post_name"=>$slug,
 				"post_title"=>$data["post_title"],
