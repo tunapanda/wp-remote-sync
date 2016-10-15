@@ -364,7 +364,16 @@ class SyncResource extends WpRecord {
 		}
 
 		if ($findFlags&SyncResource::POPULATE_REMOTE) {
-			$remoteResources=RemoteResource::fetchAllForType($type);
+
+			// FIXME! This is really a hack!
+			// We should properly check what the remote can sync.
+			try {
+				$remoteResources=RemoteResource::fetchAllForType($type);
+			}
+
+			catch (Exception $e) {
+				return array();
+			}
 
 			foreach ($remoteResources as $remoteResource) {
 				$slug=$remoteResource->getSlug();
