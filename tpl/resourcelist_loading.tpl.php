@@ -1,4 +1,4 @@
-<div id="rs-resourcelist-loading">
+<div id="rs-resourcelist-loading" style="position: relative">
 	<div class="spinner is-active" 
 		style="position: absolute; top: 20px; left: -5px; width: 20px; height: 20px">
 	</div>
