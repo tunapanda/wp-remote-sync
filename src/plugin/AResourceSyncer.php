@@ -1,10 +1,6 @@
 <?php
 
 require_once __DIR__."/../model/SyncResource.php";
-require_once __DIR__."/../../ext/merge3/DiffModule.php";
-
-if (!class_exists("Spyc"))
-	require_once __DIR__."/../../ext/spyc/Spyc.php";
 
 /**
  * Abstract class for handling remotely syncable resources.
