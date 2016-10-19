@@ -7,7 +7,7 @@ require_once __DIR__."/src/model/SyncResource.php";
 Plugin Name: Remote Sync
 Plugin URI: http://github.com/tunapanda/wp-remote-sync
 Description: Sync content with a remote site in a similar way to a distributed version control system.
-Version: 0.1.14
+Version: 0.1.15
 GitHub Plugin URI: https://github.com/tunapanda/wp-remote-sync
 */
 
@@ -111,6 +111,9 @@ add_action('admin_menu','rs_admin_menu');
  * Activation hook.
  */
 function rs_activate() {
+	if (!function_exists("curl_init"))
+		trigger_error("wp-remote-sync requires the cURL module",E_USER_ERROR);
+
 	RemoteSyncPlugin::instance()->install();
 }
 
