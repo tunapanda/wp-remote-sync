@@ -20,9 +20,51 @@ class RemoteSyncApi {
 	}
 
 	/**
+	 * Check for required access level.
+	 */
+	public function requireAccessLevel($args, $requiredLevel) {
+		$level=$this->getAccessLevel($args);
+
+		switch ($requiredLevel) {
+			case "upload":
+				if ($level=="upload")
+					return;
+				break;
+
+			case "download":
+				if (in_array($level,array("download","upload")))
+					return;
+		}
+
+		throw new Exception("Not allowed to perform this action.");
+	}
+
+	/**
+	 * Get access level.
+	 */
+	public function getAccessLevel($args) {
+		$downloadKey=get_option("rs_download_access_key");
+		$uploadKey=get_option("rs_upload_access_key");
+
+		$key=NULL;
+		if (isset($args["key"]))
+			$key=$args["key"];
+
+		if ($uploadKey && $key==$uploadKey)
+			return "upload";
+
+		if (!$downloadKey || $key==$downloadKey)
+			return "download";
+
+		return NULL;
+	}
+
+	/**
 	 * Get binary data for a resource.
 	 */
 	public function getBinary($args) {
+		$this->requireAccessLevel($args,"download");
+
 		$syncResource=SyncResource::findOneForType($args["type"],$args["slug"]);
 		if (!$syncResource)
 			throw new Exception("resource not found, slug=".$args["slug"]);
@@ -51,6 +93,8 @@ class RemoteSyncApi {
 	 * Get attachment file.
 	 */
 	public function getAttachment($args) {
+		$this->requireAccessLevel($args,"download");
+
 		if (!$args["attachment"])
 			throw new Exception("expected arg: attachment");
 
@@ -81,6 +125,8 @@ class RemoteSyncApi {
 	 * List.
 	 */
 	public function ls($args) {
+		$this->requireAccessLevel($args,"download");
+
 		if (!isset($args["type"]))
 			throw new Exception("Expected resource type for ls");
 
@@ -108,6 +154,8 @@ class RemoteSyncApi {
 	 * Get resource
 	 */
 	public function get($args) {
+		$this->requireAccessLevel($args,"download");
+
 		if (!isset($args["type"]) || !$args["type"])
 			throw new Exception("Expected parameter type");
 
@@ -157,6 +205,8 @@ class RemoteSyncApi {
 	 * Add a resource.
 	 */
 	public function add($args) {
+		$this->requireAccessLevel($args,"upload");
+
 		if (!$args["slug"] ||
 			!$args["data"] || !$args["type"])
 			throw new Exception("Expected slug, type and data.");
@@ -198,6 +248,8 @@ class RemoteSyncApi {
 	 * Put.
 	 */
 	public function put($args) {
+		$this->requireAccessLevel($args,"upload");
+
 		if (!$args["slug"] ||
 			!$args["baseRevision"] || !$args["data"] || !$args["type"])
 			throw new Exception("Expected slug, baseRevision, type and data.");
@@ -243,6 +295,8 @@ class RemoteSyncApi {
 	 * Delete.
 	 */
 	public function del($args) {
+		$this->requireAccessLevel($args,"upload");
+
 		if (!isset($args["type"]) || !$args["type"])
 			throw new Exception("Expected parameter type");
 
@@ -281,38 +335,33 @@ class RemoteSyncApi {
 
 	/**
 	 * Handle api call.
+	 * This is not testable, so do as much logic as posible 
+	 * in doApiCall.
 	 */
 	public function handleApiCall($call, $params) {
 		set_exception_handler(array($this,"handleException"));
-		if (!in_array($call,$this->calls))
-			throw new Exception("Unknown api call: $call");
 		$res = $this->doApiCall($call, $params);
 		echo json_encode($res);
 		exit();
 	}
 
 	/**
-	 * Handle the Api Response
+	 * Handle the Api Response.
+	 * Do logic here rather than in handleApiCall.
 	 */
 	public function doApiCall($call, $params){
-		$res = array();
-		if (!array_key_exists("key", $params) ||
-				$params["key"] != get_option("rs_incoming_access_key","")) {
-			$res += array("Error" => "Operation NOT permitted!!\nEither you have not set the access key or the access key does not match the remote access key."); 
-			return $res; 
-		}
-		else if (!array_key_exists("version",$params) || 
-				$params["version"]!=RemoteSyncPlugin::instance()->getProtocolVersion()) {
+		if (!array_key_exists("version",$params) || 
+				$params["version"]!=RemoteSyncPlugin::instance()->getProtocolVersion())
 			throw new Exception(
 				"Your local version of wp-remote-sync is not compatible ".
 				"with the version installed on this remote server. ".
 				"Server version: ".RemoteSyncPlugin::instance()->getProtocolVersion()
 			);
 
-		}
-		else {
-			$res=call_user_func(array($this,$call),$params);
-			return $res;
-		}
+		if (!in_array($call,$this->calls))
+			throw new Exception("Unknown api call: $call");
+
+		$res=call_user_func(array($this,$call),$params);
+		return $res;
 	}
 }

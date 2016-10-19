@@ -248,7 +248,8 @@ class RemoteSyncPageController {
 		$options=array(
 			"rs_remote_site_url",
 			"rs_access_key",
-			"rs_incoming_access_key"
+			"rs_download_access_key",
+			"rs_upload_access_key"
 		);
 
 		if ($this->errorMessage)

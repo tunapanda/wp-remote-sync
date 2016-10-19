@@ -4,6 +4,12 @@ require_once __DIR__."/../../src/controller/RemoteSyncApi.php";
 
 class RemoteSyncApiTest extends WP_UnitTestCase {
 
+	function setUp() {
+		parent::setUp();
+		delete_option("download_access_key");
+		delete_option("upload_access_key");
+	}
+
 	function test_ls() {
 		RemoteSyncPlugin::instance()->install();
 
@@ -64,6 +70,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 	}
 
 	function test_add() {
+		update_option("rs_upload_access_key","may_i_upload_please");
+
 		RemoteSyncPlugin::instance()->install();
 		$api=RemoteSyncPlugin::instance()->getApi();
 
@@ -82,7 +90,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 		$api->add(array(
 			"slug"=>"some-slug",
 			"type"=>"post",
-			"data"=>json_encode($data)
+			"data"=>json_encode($data),
+			"key"=>"may_i_upload_please"
 		));
 
 		$q=new WP_Query(array(
@@ -98,7 +107,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			$api->add(array(
 				"slug"=>"some-slug",
 				"type"=>"post",
-				"data"=>json_encode($data)
+				"data"=>json_encode($data),
+				"key"=>"may_i_upload_please"
 			));
 		}
 
@@ -110,6 +120,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 	}
 
 	function test_put() {
+		update_option("rs_upload_access_key","may_i_upload");
+
 		RemoteSyncPlugin::instance()->install();
 		$api=RemoteSyncPlugin::instance()->getApi();
 
@@ -129,7 +141,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 				"baseRevision"=>"123",
 				"slug"=>"some-slug",
 				"type"=>"post",
-				"data"=>json_encode($data)
+				"data"=>json_encode($data),
+				"key"=>"may_i_upload"
 			));
 		}
 
@@ -154,7 +167,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 		$api->add(array(
 			"slug"=>"some-slug",
 			"type"=>"post",
-			"data"=>json_encode($data)
+			"data"=>json_encode($data),
+			"key"=>"may_i_upload"
 		));
 
 		$resData=$api->get(array(
@@ -171,7 +185,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 				"slug"=>"some-slug",
 				"type"=>"post",
 				"baseRevision"=>"wrong",
-				"data"=>json_encode($data)
+				"data"=>json_encode($data),
+				"key"=>"may_i_upload"
 			));
 		}
 
@@ -185,7 +200,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"slug"=>"some-slug",
 			"type"=>"post",
 			"baseRevision"=>"98caf22f76c2d40eed50cf642db03e8b",
-			"data"=>json_encode($data)
+			"data"=>json_encode($data),
+			"key"=>"may_i_upload"
 		));
 
 		$q=new WP_Query(array(
@@ -247,33 +263,87 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"post_name"=>"the-name"
 		));
 
-		update_option('rs_access_key', "test");
-		update_option('rs_incoming_access_key', "test");
+		update_option('rs_upload_access_key', "test");
 		$api = new RemoteSyncApi();
 
 		// test listing with the right key
 		$ls_res1 = array();
-		$args = array("key"=>"test", "type"=>"post", "version"=>3);
+		$args = array("key"=>"test", "type"=>"post", "version"=>4);
 		$ls_res1 = $api->doApiCall("ls", $args);
 		//print_r($ls_res1);
 
 		//test listing with the wrong key
 		$ls_res2 = array();
-		$args = array("key"=>"Wrong Key", "type"=>"post");
+		$args = array("key"=>"Wrong Key", "type"=>"post","version"=>4);
 		$ls_res2 = $api->doApiCall("ls", $args);
 		//print_r($ls_res2);
 		
 		// test deleting with wrong key
 		$del_res1 = array();
-		$args = array("key"=>"wrong key", "type"=>"post", "slug"=>$ls_res1[0]["slug"]);
-		$del_res1 = $api->doApiCall("del", $args);
+		$args = array("key"=>"wrong key", "type"=>"post", "slug"=>$ls_res1[0]["slug"],"version"=>4);
+		$caught=NULL;
+		try {
+			$del_res1 = $api->doApiCall("del", $args);
+		}
+
+		catch (Exception $e) {
+			$caught=$e;
+		}
+		$this->assertEquals($caught->getMessage(),"Not allowed to perform this action.");
+
 		//print_r($del_res1);
 
 		// test deleting with right key
 		$del_res1 = array();
-		$args = array("key"=>"test", "type"=>"post", "slug"=>$ls_res1[0]["slug"], "version"=>3);
+		$args = array("key"=>"test", "type"=>"post", "slug"=>$ls_res1[0]["slug"], "version"=>4);
 		$del_res1 = $api->doApiCall("del", $args);
 		//print_r($del_res1);
+	}
+
+	function test_accessLevel() {
+		$api=new RemoteSyncApi();
+
+		$this->assertEquals($api->getAccessLevel(array()),"download");
+
+		update_option("rs_download_access_key","hello");
+		$this->assertEquals($api->getAccessLevel(array()),NULL);
+		$this->assertEquals($api->getAccessLevel(array("key"=>"hello")),"download");
+
+		update_option("rs_upload_access_key","world");
+		$this->assertEquals($api->getAccessLevel(array()),NULL);
+		$this->assertEquals($api->getAccessLevel(array("key"=>"hello")),"download");
+		$this->assertEquals($api->getAccessLevel(array("key"=>"world")),"upload");
+	}
+
+	function test_accessLevel2() {
+		$api=new RemoteSyncApi();
+		$api->requireAccessLevel(array("key"=>"something_random"),"download");
+	}
+
+	/**
+	 * @expectedException Exception
+	 */
+	function test_accessLevel3() {
+		$api=new RemoteSyncApi();
+		update_option("rs_download_access_key","hello");
+		$api->requireAccessLevel(array("key"=>"something_random"),"download");
+	}
+
+	/**
+	 * @expectedException Exception
+	 */
+	function test_accessLevel4() {
+		$api=new RemoteSyncApi();
+		update_option("rs_download_access_key","hello");
+		update_option("rs_upload_access_key","world");
+		$api->requireAccessLevel(array("key"=>"hello"),"upload");
+	}
+
+	function test_accessLevel5() {
+		$api=new RemoteSyncApi();
+		update_option("rs_download_access_key","hello");
+		update_option("rs_upload_access_key","world");
+		$api->requireAccessLevel(array("key"=>"world"),"upload");
 	}
 }
 

@@ -62,18 +62,18 @@
                         <input type="text" name="rs_remote_site_url" 
                             value="<?php echo esc_attr(get_option("rs_remote_site_url")); ?>" 
                             class="regular-text"/>
-                        <p class="description">This is the remote site to pull changes from and push changes to.</p>
+                        <p class="description">This is the remote site to sync with.</p>
                     </td>
                 </tr>
                 <tr>
-                    <th>Access Key</th>
+                    <th>Access key</th>
                     <td>
                         <input type="text" 
                             name="rs_access_key" 
                             value="<?php echo esc_attr(get_option("rs_access_key"));?>"
                             class="regular-text"/>
                         <p class="description">
-                            Please enter the key so that you authenticate syncing.
+                            This access key will be used when connecting to the remote site.
                         </p>
                     </td>
                 </tr>
@@ -92,19 +92,34 @@
             <?php do_settings_sections( 'rs' ); ?>
             <table class="form-table">
                 <tr>
-                    <th>Incoming Access Key</th>
+                    <th>Access key for downloading</th>
                     <td>
                         <input type="text"
-                            name="rs_incoming_access_key" 
-                            value="<?php echo esc_attr(get_option("rs_incoming_access_key"));?>"
+                            name="rs_download_access_key" 
+                            value="<?php echo esc_attr(get_option("rs_download_access_key"));?>"
                             class="regular-text"/>
                         <p class="description">
-                            This is the key that other sites should use when connecting to this site.
+                            Clients using this key will be able to download content, 
+                            but not modify content on this server.<br>
+                            If this field is left blank, clients can connect and download content without a key.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Access key for uploading</th>
+                    <td>
+                        <input type="text"
+                            name="rs_upload_access_key" 
+                            value="<?php echo esc_attr(get_option("rs_upload_access_key"));?>"
+                            class="regular-text"/>
+                        <p class="description">
+                            Clients using this key will be able to download content and modify content on
+                            this server.<br>
+                            If this field is left blank, uploading will be disabled.
                         </p>
                     </td>
                 </tr>
             </table>
-
             <?php submit_button(); ?>
         </form>
     <?php } ?>
