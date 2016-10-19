@@ -229,7 +229,14 @@ class PostSyncer extends AResourceSyncer {
 		if ($updateInfo->isCreate()) {
 			// Check if it exists in trash, if so delete permanently,
 			// because we need the slug to be free.
-			$q=$wpdb->prepare("SELECT * FROM {$wpdb->prefix}posts WHERE post_name=%s",$slug);
+			$q=$wpdb->prepare(
+				"SELECT * ".
+				"FROM   {$wpdb->prefix}posts ".
+				"WHERE  post_name=%s ".
+				"AND    post_type IN ('post','page')",
+				$slug
+			);
+
 			$row=$wpdb->get_row($q);
 			if ($wpdb->last_error)
 				throw new Exception($wpdb->last_error);
