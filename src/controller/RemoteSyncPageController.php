@@ -80,9 +80,26 @@ class RemoteSyncPageController {
 		if (!$uniqueSlugs)
 			throw new Exception("Nothing to sync!");
 
-		$syncResources=SyncResource::findAllEnabled(
-			SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE
-		);
+		$syncResources=array();
+		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();
+		foreach ($syncers as $syncer) {
+			$resourcesForType=array();
+			try {
+				$resourcesForType=SyncResource::findAllForType(
+					$syncer->getType(),
+					SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE
+				);
+			}
+
+			catch (Exception $e) {
+				if ($e->getMessage()!="Resource type not enabled")
+					throw $e;
+
+				$logger->message($syncer->getType().": No remote support.");
+			}
+
+			$syncResources=array_merge($syncResources,$resourcesForType);
+		}
 
 		foreach ($syncResources as $syncResource) {
 			if (in_array($syncResource->getUniqueSlug(),$uniqueSlugs)) {
@@ -154,45 +171,58 @@ class RemoteSyncPageController {
 		$resourceViewCategoryDatas=array();
 
 		foreach ($syncers as $syncer) {
-			$syncResources=SyncResource::findAllForType(
-				$syncer->getType(),
-				SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE
-			);
+			$haveRemoteSupport=TRUE;
 
-			$resourceViewDatas=array();
-
-			foreach ($syncResources as $syncResource) {
-				$state=$syncResource->getState();
-
-				if ($state==SyncResource::GARBAGE) {
-					$syncResource->delete();
-				}
-
-				else if ($state!=SyncResource::UP_TO_DATE) {
-					$actions=array();
-					foreach (self::$applicableActions[$state] as $action) {
-						$actions[$action]=self::$actionLabels[$action];
-					}
-
-					if (!$actions)
-						throw new Exception("No actions to apply.");
-
-					if (self::$stateLabels[$state]) {
-						$resourceViewData=array(
-							"uniqueSlug"=>$syncResource->getUniqueSlug(),
-							"slug"=>$syncResource->getSlug(),
-							"stateLabel"=>self::$stateLabels[$state],
-							"actions"=>$actions
-						);
-
-						$resourceViewDatas[]=$resourceViewData;
-					}
-				}
+			try {
+				$syncResources=SyncResource::findAllForType(
+					$syncer->getType(),
+					SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE
+				);
 			}
 
-			if ($resourceViewDatas) {
-				$typeLabel=ucfirst($syncer->getType());
-				$resourceViewCategoryDatas[$typeLabel]=$resourceViewDatas;
+			catch (Exception $e) {
+				if ($e->getMessage()!="Resource type not enabled")
+					throw $e;
+
+				$haveRemoteSupport=FALSE;
+			}
+
+			if ($haveRemoteSupport) {
+				$resourceViewDatas=array();
+
+				foreach ($syncResources as $syncResource) {
+					$state=$syncResource->getState();
+
+					if ($state==SyncResource::GARBAGE) {
+						$syncResource->delete();
+					}
+
+					else if ($state!=SyncResource::UP_TO_DATE) {
+						$actions=array();
+						foreach (self::$applicableActions[$state] as $action) {
+							$actions[$action]=self::$actionLabels[$action];
+						}
+
+						if (!$actions)
+							throw new Exception("No actions to apply.");
+
+						if (self::$stateLabels[$state]) {
+							$resourceViewData=array(
+								"uniqueSlug"=>$syncResource->getUniqueSlug(),
+								"slug"=>$syncResource->getSlug(),
+								"stateLabel"=>self::$stateLabels[$state],
+								"actions"=>$actions
+							);
+
+							$resourceViewDatas[]=$resourceViewData;
+						}
+					}
+				}
+
+				if ($resourceViewDatas) {
+					$typeLabel=ucfirst($syncer->getType());
+					$resourceViewCategoryDatas[$typeLabel]=$resourceViewDatas;
+				}
 			}
 		}
 

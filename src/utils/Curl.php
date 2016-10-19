@@ -215,9 +215,6 @@ class Curl {
 		if ($outf)
 			fclose($outf);
 
-		if ($returnCode!=200)
-			throw new Exception("Unexpected return code: ".$returnCode."\n".$res);
-
 		switch ($this->resultDecoding) {
 			case Curl::JSON:
 				$raw=$res;
@@ -229,6 +226,13 @@ class Curl {
 					throw new Exception($res["Error"]);
 
 				break;
+		}
+
+		if ($returnCode!=200) {
+			if (is_array($res) && isset($res["message"]))
+				throw new Exception($res["message"]);
+
+			throw new Exception("Unexpected return code: ".$returnCode."\n".$res);
 		}
 
 		return $res;

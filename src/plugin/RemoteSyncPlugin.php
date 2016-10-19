@@ -62,7 +62,7 @@ class RemoteSyncPlugin extends Singleton {
 			if ($syncer->getType()==$type)
 				return $syncer;
 
-		throw new Exception("Can't sync: ".$type);
+		throw new Exception("Resource type not enabled");
 	}
 
 	/**
