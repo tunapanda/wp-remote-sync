@@ -51,7 +51,7 @@ class PostSyncer extends AResourceSyncer {
 		$structuredMeta=array();
 
 		foreach ($meta as $key=>$value) {
-			if ($key[0]!="_") {
+			if ($key[0]!="_" && $key) {
 				if (is_array($value)) {
 					foreach ($value as $singleValue)
 						$structuredMeta[]=array(
