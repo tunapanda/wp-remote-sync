@@ -43,6 +43,7 @@ class JobOutputLogger {
 	 * The task is done.
 	 */
 	public function taskDone() {
+		$this->taskMessage=NULL;
 		echo "<script>jobs('');</script>\n";
 	}
 
