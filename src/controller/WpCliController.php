@@ -4,6 +4,9 @@ require_once __DIR__."/../utils/Singleton.php";
 require_once __DIR__."/../log/WpCliLogger.php";
 require_once __DIR__."/SyncJob.php";
 
+/**
+ * Remote?
+ */
 class WpCliController extends Singleton {
 
 	private static $stateLabels=array(
@@ -17,11 +20,42 @@ class WpCliController extends Singleton {
 	);
 
 	/**
-	 * Sync.
+	 * Handle exception while syncing.
 	 */
-	function sync() {
+	function handleExceptionInSync($exception) {
+		WP_CLI::error($exception->getMessage());
+	}
+
+	/**
+	 * Sync resources on this WordPress installation with the remote.
+	 * The remote needs to be set up in the settings page.
+	 *
+	 * ## OPTIONS
+	 * [--resolve=<strategy>]
+	 * : Strategy to use for resources that have been updated on both servers.
+	 * Available options:
+	 * none       - Leave resource for manual resolution.
+	 * useLocal   - Upload local resource to remote.
+	 * useRemote  - Download remote resource to local.
+	 */
+	function sync($args, $params) {
 		RemoteSyncPlugin::instance()->setLogger(new WpCliLogger());
+		set_exception_handler(array($this,"handleExceptionInSync"));
+
 		$job=new SyncJob();
+
+		foreach ($params as $param=>$value) {
+			switch ($param) {
+				case "resolve":
+					$job->setResolutionStrategy($value);
+					break;
+
+				default:
+					throw new Exception("Unknown param: ".$param);
+					break;
+			}
+		}
+
 		$job->run();
 
 		WP_CLI::success("Up to date!");
@@ -29,6 +63,9 @@ class WpCliController extends Singleton {
 
 	/**
 	 * Check status.
+	 * Will compare resources on this server and the remote server
+	 * and show a list of their statuses. The remote needs to be set up
+	 * on the settings page.
 	 */
 	function status() {
 		if (!trim(get_option("rs_remote_site_url"))) {
