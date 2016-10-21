@@ -3,7 +3,7 @@
 require_once __DIR__."/../../src/utils/Template.php";
 require_once __DIR__."/../../src/model/SyncResource.php";
 require_once __DIR__."/../../src/utils/ApacheUtil.php";
-require_once __DIR__."/../../src/utils/JobOutputLogger.php";
+require_once __DIR__."/../../src/log/JobOutputLogger.php";
 
 use remotesync\Template;
 
@@ -55,8 +55,8 @@ class RemoteSyncPageController {
 	 */
 	function handleExceptionInSync($exception) {
 		$logger=RemoteSyncPlugin::instance()->getLogger();
-		$logger->message($exception->getMessage());
-		$logger->message($exception->getTraceAsString());
+		$logger->log($exception->getMessage());
+		$logger->log($exception->getTraceAsString());
 		$logger->done();
 	}
 
@@ -95,7 +95,7 @@ class RemoteSyncPageController {
 				if ($e->getMessage()!="Resource type not enabled")
 					throw $e;
 
-				$logger->message($syncer->getType().": No remote support.");
+				$logger->log($syncer->getType().": No remote support.");
 			}
 
 			$syncResources=array_merge($syncResources,$resourcesForType);
@@ -103,7 +103,7 @@ class RemoteSyncPageController {
 
 		foreach ($syncResources as $syncResource) {
 			if (in_array($syncResource->getUniqueSlug(),$uniqueSlugs)) {
-				$logger->status("Syncing: ".$syncResource->getUniqueSlug());
+				$logger->task("Syncing: ".$syncResource->getUniqueSlug());
 
 				$state=$syncResource->getState();
 				$action=$_REQUEST["action"][$syncResource->getUniqueSlug()];
@@ -149,12 +149,12 @@ class RemoteSyncPageController {
 						break;
 				}
 
-				$logger->message($action.": ".$syncResource->getUniqueSlug());
+				$logger->log($action.": ".$syncResource->getUniqueSlug());
 			}
 		}
 
-		$logger->message("");
-		$logger->message("Done!");
+		$logger->log("");
+		$logger->log("Done!");
 		$logger->done();
 	}
 

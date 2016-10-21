@@ -111,13 +111,7 @@ class RemoteSyncPlugin extends Singleton {
 		if (!$this->logger)
 			return;
 
-		if ($percent)
-			$percent.="%";
-
-		else
-			$percent="";
-
-		$this->logger->status($this->remoteCallStatus." ".$percent);
+		$this->logger->taskProgress($percent);
 	}
 
 	/**
@@ -130,11 +124,9 @@ class RemoteSyncPlugin extends Singleton {
 	/**
 	 * Create a remote call.
 	 */
-	public function remoteCall($action, $message="Please wait...") {
-		$this->remoteCallStatus=$message;
-
+	public function remoteCall($action, $message="Please wait") {
 		if ($this->logger)
-			$this->logger->status($this->remoteCallStatus);
+			$this->logger->task($message);
 
 		$url=trim(get_option("rs_remote_site_url"));
 

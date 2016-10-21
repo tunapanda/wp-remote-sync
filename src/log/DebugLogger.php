@@ -1,19 +1,14 @@
 <?php
 
+require_once __DIR__."/ALogger.php";
+
 /**
  * Mock logging class.
  */
-class MockJob {
+class DebugLogger extends ALogger {
 
 	private $lines=array();
 	private $echo=FALSE;
-
-	/**
-	 *
-	 */
-	public function message($message) {
-		$tihs->log($message);
-	}
 
 	/**
 	 * Log a message.
@@ -23,12 +18,6 @@ class MockJob {
 			echo $message."\n";
 
 		$this->lines[]=$message;
-	}
-
-	/**
-	 * Status.
-	 */
-	public function status($message) {
 	}
 
 	/**

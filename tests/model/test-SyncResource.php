@@ -2,7 +2,7 @@
 
 require_once __DIR__."/../../src/model/SyncResource.php";
 require_once __DIR__."/../../src/plugin/AResourceSyncer.php";
-require_once __DIR__."/../../src/utils/MockJob.php";
+require_once __DIR__."/../../src/log/DebugLogger.php";
 
 class SRTestSyncer extends AResourceSyncer {
 
@@ -48,13 +48,13 @@ class SyncResourceTest extends WP_UnitTestCase {
 
 		Curl::initMock();
 
-		RemoteSyncPlugin::instance()->setLogger(new MockJob());
+		RemoteSyncPlugin::instance()->setLogger(new DebugLogger());
 	}
 
 	function test_createLocalResource() {
 		global $wpdb;
 
-		RemoteSyncPlugin::instance()->setLogger(new MockJob());
+		RemoteSyncPlugin::instance()->setLogger(new DebugLogger());
 		RemoteSyncPlugin::instance()->syncers=array(new AttachmentSyncer());
 		RemoteSyncPlugin::instance()->install();
 
@@ -120,7 +120,7 @@ class SyncResourceTest extends WP_UnitTestCase {
 	function test_createLocalResourceFailingDownload() {
 		global $wpdb;
 
-		RemoteSyncPlugin::instance()->setLogger(new MockJob());
+		RemoteSyncPlugin::instance()->setLogger(new DebugLogger());
 		RemoteSyncPlugin::instance()->syncers=array(new AttachmentSyncer());
 		RemoteSyncPlugin::instance()->install();
 
