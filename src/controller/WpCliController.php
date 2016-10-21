@@ -1,13 +1,8 @@
 <?php
-namespace rs;
 
 require_once __DIR__."/../utils/Singleton.php";
-
-use \Singleton;
-use \WP_CLI;
-use \RemoteSyncPlugin;
-use \Exception;
-use \SyncResource;
+require_once __DIR__."/../log/WpCliLogger.php";
+require_once __DIR__."/SyncJob.php";
 
 class WpCliController extends Singleton {
 
@@ -25,7 +20,11 @@ class WpCliController extends Singleton {
 	 * Sync.
 	 */
 	function sync() {
-		WP_CLI::error("Not yet implemented.");
+		RemoteSyncPlugin::instance()->setLogger(new WpCliLogger());
+		$job=new SyncJob();
+		$job->run();
+
+		WP_CLI::success("Up to date!");
 	}
 
 	/**

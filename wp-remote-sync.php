@@ -138,6 +138,6 @@ register_uninstall_hook(__FILE__,'rs_uninstall');
 if (class_exists("WP_CLI")) {
 	require_once __DIR__."/src/controller/WpCliController.php";
 
-	WP_CLI::add_command("remote status",array(rs\WpCliController::instance(),'status'));
-	WP_CLI::add_command("remote sync",array(rs\WpCliController::instance(),'sync'));
+	WP_CLI::add_command("remote status",array(WpCliController::instance(),'status'));
+	WP_CLI::add_command("remote sync",array(WpCliController::instance(),'sync'));
 }
