@@ -32,6 +32,10 @@
             href="<?php echo admin_url("options-general.php?page=rs_main&tab=connection"); ?>">
             Connection
         </a>
+        <a class="nav-tab <?php echo (($tab=="scheduled"||$tab=="scheduled_log")?"nav-tab-active":"nav-tab"); ?>"
+            href="<?php echo admin_url("options-general.php?page=rs_main&tab=scheduled"); ?>">
+            Scheduled Sync
+        </a>
         <a class="nav-tab <?php echo ($tab=="remote"?"nav-tab-active":"nav-tab"); ?>"
             href="<?php echo admin_url("options-general.php?page=rs_main&tab=remote"); ?>">
             Act as Remote
@@ -57,7 +61,7 @@
             <?php do_settings_sections( 'rs' ); ?>
             <table class="form-table">
                 <tr valign="top">
-                    <th scope="row">Remote site url</th>
+                    <th scope="row">Remote Site Url</th>
                     <td>
                         <input type="text" name="rs_remote_site_url" 
                             value="<?php echo esc_attr(get_option("rs_remote_site_url")); ?>" 
@@ -66,7 +70,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <th>Access key</th>
+                    <th>Access Key</th>
                     <td>
                         <input type="text" 
                             name="rs_access_key" 
@@ -81,6 +85,78 @@
 
             <?php submit_button(); ?>
         </form>
+    <?php } else if ($tab=="scheduled") { ?>
+        <p>
+            You can set up this WordPress site to automatically sync its content with the remote.
+        </p>
+        <form method="post"
+            action="<?php echo admin_url("options-general.php?page=rs_main&tab=scheduled"); ?>">
+            <?php settings_fields( 'rs' ); ?>
+            <?php do_settings_sections( 'rs' ); ?>
+            <table class="form-table">
+                <tr>
+                    <th>Sheduled Syncs</th>
+                    <td>
+                        <select name="schedule">
+                            <?php $schedule=wp_get_schedule("rs_scheduled_sync"); ?>
+                            <option value="">Disabled</option>
+                            <option value="hourly"
+                                <?php if ($schedule=="hourly") echo "selected"; ?>
+                            >Hourly</option>
+                            <option value="twicedaily"
+                                <?php if ($schedule=="twicedaily") echo "selected"; ?>
+                            >Twice daily</option>
+                            <option value="daily"
+                                <?php if ($schedule=="daily") echo "selected"; ?>
+                            >Daily</option>
+                        </select>
+                        <p class="description">
+                            How often do you want scheduled syncs to occur?
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Conflicts</th>
+                    <td>
+                        <select name="rs_resulotion_strategy">
+                            <?php $r=get_option("rs_resulotion_strategy"); ?>
+                            <option value="none"
+                                <?php if ($r=="none") echo "selected"; ?>
+                            >Leave for manual resolution</option>
+                            <option value="useRemote"
+                                <?php if ($r=="useRemote") echo "selected"; ?>
+                            >Download remote content, overwrite local changes</option>
+                            <option value="useLocal"
+                                <?php if ($r=="useLocal") echo "selected"; ?>
+                            >Upload local content, overwrite remote changes</option>
+                        </select>
+                        <p class="description">
+                            What if content is changed on both servers when syncing?
+                        </p>
+                    </td>
+                </tr>
+
+                <?php if (wp_get_schedule("rs_scheduled_sync")) { ?>
+                    <tr>
+                        <th>Current Schedule</th>
+                        <td>
+                            Next sync starts in: <?php echo $nextScheduled; ?>
+                            <?php if ($prevScheduled) { ?>
+                                <br/>
+                                Previous sync started: <?php echo $prevScheduled; ?> ago
+                                (<a href="?page=rs_main&tab=scheduled_log">view log</a>) 
+                            <?php } ?>
+                        </td>
+                    </tr>
+                <?php } ?>
+            </table>
+            <?php submit_button(); ?>
+        </form>
+    <?php } else if ($tab=="scheduled_log") { ?>
+        <p>
+            This is the log for the last sync job, which ran at <?php echo $lastScheduledTime; ?>.
+        </p>
+        <pre><?php echo $scheduledLogContents; ?></pre>
     <?php } else if ($tab=="remote") { ?>
         <p>
             These settings are used when this WordPress site acts as a remote for

@@ -51,6 +51,8 @@ class SyncJob {
 		if (!$logger)
 			throw new Exception("SyncJob needs a logger.");
 
+		$logger->log("Checking resources on remote site...");
+
 		$syncResources=array();
 		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();
 		foreach ($syncers as $syncer) {
@@ -72,12 +74,23 @@ class SyncJob {
 			$syncResources=array_merge($syncResources,$resourcesForType);
 		}
 
-		$logger->log("Number of resources: ".sizeof($syncResources));
+		$upToDate=0;
+		foreach ($syncResources as $syncResource) {
+			$state=$syncResource->getState();
+			if ($state==SyncResource::UP_TO_DATE)
+				$upToDate++;
+		}
+
+		$logger->log("Total number of resources: ".sizeof($syncResources));
+		$logger->log("Up to date: ".$upToDate);
+		$logger->log("");
 
 		foreach ($syncResources as $syncResource) {
 			$state=$syncResource->getState();
 			$stateLabel=self::$stateLabels[$state];
-			$logger->log($syncResource->getUniqueSlug().": ".$stateLabel);
+
+			if ($state!=SyncResource::UP_TO_DATE)
+				$logger->log($syncResource->getUniqueSlug().": ".$stateLabel);
 
 			switch ($syncResource->getState()) {
 				case SyncResource::NEW_LOCAL:

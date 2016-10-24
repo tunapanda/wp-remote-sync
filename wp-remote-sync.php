@@ -2,12 +2,13 @@
 
 require_once __DIR__."/src/plugin/RemoteSyncPlugin.php";
 require_once __DIR__."/src/model/SyncResource.php";
+require_once __DIR__."/src/controller/ScheduledSyncController.php";
 
 /*
 Plugin Name: Remote Sync
 Plugin URI: http://github.com/tunapanda/wp-remote-sync
 Description: Sync content with a remote site in a similar way to a distributed version control system.
-Version: 0.1.17
+Version: 0.1.18
 GitHub Plugin URI: https://github.com/tunapanda/wp-remote-sync
 */
 
@@ -108,13 +109,20 @@ function rs_view_test() {
 add_action('admin_menu','rs_admin_menu');
 
 /**
- * Activation hook.
+ * Activate.
  */
 function rs_activate() {
 	if (!function_exists("curl_init"))
 		trigger_error("wp-remote-sync requires the cURL module",E_USER_ERROR);
 
 	RemoteSyncPlugin::instance()->install();
+}
+
+/**
+ * Deactivate.
+ */
+function rs_deactivate() {
+	wp_clear_scheduled_hook('rs_sheduled_sync');
 }
 
 /**
@@ -127,9 +135,11 @@ function rs_uninstall() {
 	delete_option("rs_access_key");
 	delete_option("rs_download_access_key");
 	delete_option("rs_upload_access_key");
+	delete_option("rs_resulotion_strategy");
 }
 
 register_activation_hook(__FILE__,'rs_activate');
+register_deactivation_hook(__FILE__,'rs_deactivate');
 register_uninstall_hook(__FILE__,'rs_uninstall');
 
 /**
@@ -141,3 +151,5 @@ if (class_exists("WP_CLI")) {
 	WP_CLI::add_command("remote status",array(WpCliController::instance(),'status'));
 	WP_CLI::add_command("remote sync",array(WpCliController::instance(),'sync'));
 }
+
+add_action("rs_scheduled_sync",array(ScheduledSyncController::instance(),"run"));

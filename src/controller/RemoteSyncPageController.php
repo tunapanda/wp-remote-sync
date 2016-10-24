@@ -234,6 +234,7 @@ class RemoteSyncPageController {
 
 	/**
 	 * Show the main page.
+	 * Save options.
 	 */
 	function showMain() {
 		$tab=$_REQUEST["tab"];
@@ -244,11 +245,45 @@ class RemoteSyncPageController {
 			"tab"=>$tab
 		);
 
+		if ($tab=="scheduled" && isset($_REQUEST["schedule"])) {
+			if ($_REQUEST["schedule"]!=wp_get_schedule("rs_scheduled_sync")) {
+				wp_clear_scheduled_hook("rs_scheduled_sync");
+
+				if ($_REQUEST["schedule"]) {
+					wp_schedule_event(
+						time(), //60,
+						$_REQUEST["schedule"],
+						"rs_scheduled_sync"
+					);
+				}
+			}
+		}
+
+		if (wp_next_scheduled("rs_scheduled_sync")) {
+			$params["nextScheduled"]=human_time_diff(wp_next_scheduled("rs_scheduled_sync"));
+		}
+
+		else {
+			$params["nextScheduled"]=NULL;
+		}
+
+		$upload_dir=wp_upload_dir();
+		$upload_base_dir=$upload_dir["basedir"];
+		if (file_exists($upload_base_dir."/wp-remote-sync.log")) {
+			$t=filemtime($upload_base_dir."/wp-remote-sync.log");
+			$params["prevScheduled"]=human_time_diff($t);
+		}
+
+		else {
+			$params["prevScheduled"]=NULL;
+		}
+
 		$options=array(
 			"rs_remote_site_url",
 			"rs_access_key",
 			"rs_download_access_key",
-			"rs_upload_access_key"
+			"rs_upload_access_key",
+			"rs_resulotion_strategy"
 		);
 
 		if ($this->errorMessage)
@@ -259,6 +294,19 @@ class RemoteSyncPageController {
 				update_option($option,$_REQUEST[$option]);
 				$params["message"]="Settings saved.";
 			}
+		}
+
+		if ($tab=="scheduled_log") {
+			$upload_dir=wp_upload_dir();
+			$upload_base_dir=$upload_dir["basedir"];
+			$logFileName=$upload_base_dir."/wp-remote-sync.log";
+
+			$params["scheduledLogContents"]=file_get_contents($logFileName);
+			$params["lastScheduledTime"]=
+				get_date_from_gmt(
+					date('Y-m-d H:i:s',filemtime($logFileName)),
+					"r"
+				);
 		}
 
 		Template::display(__DIR__."/../../tpl/main.tpl.php",$params);
