@@ -95,7 +95,7 @@
             <?php do_settings_sections( 'rs' ); ?>
             <table class="form-table">
                 <tr>
-                    <th>Sheduled Syncs</th>
+                    <th>Scheduled Sync</th>
                     <td>
                         <select name="schedule">
                             <?php $schedule=wp_get_schedule("rs_scheduled_sync"); ?>
