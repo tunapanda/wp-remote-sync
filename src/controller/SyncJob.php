@@ -44,14 +44,10 @@ class SyncJob {
 	}
 
 	/**
-	 * Run.
+	 * Get sync resources.
 	 */
-	public function run() {
+	public function getSyncResources() {
 		$logger=RemoteSyncPlugin::instance()->getLogger();
-		if (!$logger)
-			throw new Exception("SyncJob needs a logger.");
-
-		$logger->log("Checking resources on remote site...");
 
 		$syncResources=array();
 		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();
@@ -73,6 +69,20 @@ class SyncJob {
 
 			$syncResources=array_merge($syncResources,$resourcesForType);
 		}
+
+		return $syncResources;
+	}
+
+	/**
+	 * Run sync.
+	 */
+	public function run() {
+		$logger=RemoteSyncPlugin::instance()->getLogger();
+		if (!$logger)
+			throw new Exception("SyncJob needs a logger.");
+
+		$logger->log("Checking resources on remote site...");
+		$syncResources=$this->getSyncResources();
 
 		$upToDate=0;
 		foreach ($syncResources as $syncResource) {
@@ -149,6 +159,74 @@ class SyncJob {
 							throw new Exception("Unknown resolution strategy.");
 							break;
 					}
+					break;
+
+				case SyncResource::GARBAGE:
+					$syncResource->delete();
+					break;
+
+				case SyncResource::UP_TO_DATE:
+					break;
+
+				default:
+					throw new Exception("Can't handle this state: ".$syncResource->getState());
+					break;
+			}
+		}
+	}
+
+	/**
+	 * Revert.
+	 */
+	public function revert() {
+		$logger=RemoteSyncPlugin::instance()->getLogger();
+		if (!$logger)
+			throw new Exception("SyncJob needs a logger.");
+
+		$logger->log("Checking resources on remote site...");
+		$syncResources=$this->getSyncResources();
+
+		foreach ($syncResources as $syncResource) {
+			$state=$syncResource->getState();
+			$stateLabel=self::$stateLabels[$state];
+
+			if ($state!=SyncResource::UP_TO_DATE)
+				$logger->log($syncResource->getUniqueSlug().": ".$stateLabel);
+
+			switch ($syncResource->getState()) {
+				case SyncResource::NEW_LOCAL:
+					$syncResource->deleteLocalResource();
+					$logger->log($syncResource->getUniqueSlug().": Deleted local resource.");
+					break;
+
+				case SyncResource::NEW_REMOTE:
+					$syncResource->createLocalResource();
+					$logger->log($syncResource->getUniqueSlug().": Created local resource.");
+					break;
+
+				case SyncResource::DELETED_LOCAL:
+					$syncResource->createLocalResource();
+					$logger->log($syncResource->getUniqueSlug().": Restored local resource.");
+					break;
+
+				case SyncResource::DELETED_REMOTE:
+					$syncResource->deleteLocalResource();
+					$logger->log($syncResource->getUniqueSlug().": Deleted local resource.");
+					break;
+
+				case SyncResource::UPDATED_LOCAL:
+					$syncResource->updateLocalResource();
+					$logger->log($syncResource->getUniqueSlug().": Downloaded to local.");
+					break;
+
+				case SyncResource::UPDATED_REMOTE:
+					$syncResource->updateLocalResource();
+					$logger->log($syncResource->getUniqueSlug().": Downloaded to local.");
+					break;
+
+				case SyncResource::CONFLICT:
+					$syncResource->updateLocalResource();
+					$logger->log($syncResource->getUniqueSlug().": Downloaded to local.");
 					break;
 
 				case SyncResource::GARBAGE:

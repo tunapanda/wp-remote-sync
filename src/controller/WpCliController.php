@@ -42,6 +42,9 @@ class WpCliController extends Singleton {
 		RemoteSyncPlugin::instance()->setLogger(new WpCliLogger());
 		set_exception_handler(array($this,"handleExceptionInSync"));
 
+		if ($args)
+			throw new Exception("Wrong usage, check help");
+
 		$job=new SyncJob();
 
 		foreach ($params as $param=>$value) {
@@ -62,6 +65,24 @@ class WpCliController extends Singleton {
 	}
 
 	/**
+	 * Update local site to be like remote.
+	 * Remote changes will be applied to the local site, local
+	 * updates will be discarded.
+	 */
+	function revert($args, $params) {
+		RemoteSyncPlugin::instance()->setLogger(new WpCliLogger());
+		set_exception_handler(array($this,"handleExceptionInSync"));
+
+		if ($args)
+			throw new Exception("Wrong usage, check help");
+
+		$job=new SyncJob();
+		$job->revert();
+
+		WP_CLI::success("Local site reverted and updated to reflect remote!");
+	}
+
+	/**
 	 * Check status.
 	 * Will compare resources on this server and the remote server
 	 * and show a list of their statuses. The remote needs to be set up
@@ -72,6 +93,8 @@ class WpCliController extends Singleton {
 			WP_CLI::error("No remote set.");
 			return;
 		}
+
+		WP_CLI::log("Checking resources on remote site...");
 
 		$syncResources=array();
 		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();

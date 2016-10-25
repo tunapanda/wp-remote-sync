@@ -497,7 +497,8 @@ class SyncResource extends WpRecord {
 	 */
 	function deleteLocalResource() {
 		$this->getSyncer()->deleteResource($this->slug);
-		$this->delete();
+		if ($this->id)
+			$this->delete();
 	}
 
 	/**
