@@ -39,7 +39,7 @@ class RemoteSyncPluginTest extends WP_UnitTestCase {
 
 		RemoteSyncPlugin::instance()->syncers=array();
 		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();
-		$this->assertEquals(3,sizeof($syncers));
+		$this->assertEquals(4,sizeof($syncers));
 
 		$res=RemoteSyncPlugin::instance()->getApi()->ls(array("type"=>"TestSyncer"));
 		$this->assertEquals(4,sizeof($res));

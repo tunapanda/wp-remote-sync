@@ -5,6 +5,7 @@ require_once __DIR__."/../syncers/PostSyncer.php";
 require_once __DIR__."/../syncers/AttachmentSyncer.php";
 require_once __DIR__."/../syncers/H5pSyncer.php";
 require_once __DIR__."/../syncers/PluggableSyncer.php";
+require_once __DIR__."/../syncers/TaxonomySyncer.php";
 require_once __DIR__."/../controller/RemoteSyncApi.php";
 require_once __DIR__."/../utils/Curl.php";
 
@@ -37,7 +38,8 @@ class RemoteSyncPlugin extends Singleton {
 			$syncerClasses=array(
 				"PostSyncer",
 				"AttachmentSyncer",
-				"H5pSyncer"
+				"H5pSyncer",
+				"TaxonomySyncer"
 			);
 
 			foreach ($syncerClasses as $syncerClass) {
