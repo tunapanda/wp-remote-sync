@@ -25,7 +25,7 @@ class RemoteSyncPlugin extends Singleton {
 		$this->callMessage="Syncing...";
 		$this->lastPrintedMessage="";
 
-		$this->protocolVersion=4;
+		$this->protocolVersion=5;
 	}
 
 	/**
