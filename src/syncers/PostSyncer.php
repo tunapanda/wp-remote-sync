@@ -1,6 +1,9 @@
 <?php
 
 require_once __DIR__."/../plugin/AResourceSyncer.php";
+require_once __DIR__."/../utils/WpUtil.php";
+
+use remotesync\WpUtil;
 
 /**
  * Sync wordpress posts.
@@ -197,6 +200,22 @@ class PostSyncer extends AResourceSyncer {
 		if (!$parentSlug)
 			$parentSlug="";
 
+		$terms=wp_get_object_terms(
+			$localId,
+			WpUtil::getTaxonomiesByPostType("post")
+		);
+
+		$termSlugs=array();
+		foreach ($terms as $term) {
+			if (isset($termSlugs[$term->taxonomy]))
+				$termSlugs[$term->taxonomy]=array();
+
+			$termSlugs[$term->taxonomy][]=$term->slug;
+			sort($termSlugs[$term->taxonomy]);
+		}
+
+		ksort($termSlugs);
+
 		$data=array(
 			"post_name"=>$post->post_name,
 			"post_title"=>$post->post_title,
@@ -206,7 +225,8 @@ class PostSyncer extends AResourceSyncer {
 			"post_status"=>$post->post_status,
 			"post_parent"=>$parentSlug,
 			"menu_order"=>$post->menu_order,
-			"meta"=>PostSyncer::getStructuredPostMeta($localId)
+			"meta"=>PostSyncer::getStructuredPostMeta($localId),
+			"terms"=>$termSlugs
 		);
 
 		return $data;
@@ -286,6 +306,10 @@ class PostSyncer extends AResourceSyncer {
 
 			wp_update_post($post);
 		}
+
+		$taxonomies=WpUtil::getTaxonomiesByPostType("post");
+		foreach ($taxonomies as $taxonomy)
+			wp_set_object_terms($localId,$data["terms"][$taxonomy],$taxonomy);
 	}
 
 	/**

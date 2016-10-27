@@ -36,10 +36,10 @@ class RemoteSyncPlugin extends Singleton {
 			$this->syncers=array(); 
 
 			$syncerClasses=array(
+				"TaxonomySyncer",
 				"PostSyncer",
 				"AttachmentSyncer",
-				"H5pSyncer",
-				"TaxonomySyncer"
+				"H5pSyncer"
 			);
 
 			foreach ($syncerClasses as $syncerClass) {

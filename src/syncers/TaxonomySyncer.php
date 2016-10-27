@@ -95,7 +95,7 @@ class TaxonomySyncer extends AResourceSyncer {
 			"description"=>$row["description"],
 			"name"=>$row["name"],
 			"slug"=>$slug,
-			"parent"=>$parent,
+			"parent"=>$parent
 		);
 
 		return $data;
