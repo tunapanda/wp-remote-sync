@@ -84,7 +84,12 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"post_status"=>"published",
 			"post_parent"=>"",
 			"menu_order"=>0,
-			"meta"=>array()
+			"meta"=>array(),
+			"terms"=>array(
+				"category"=>array(),
+				"post_tag"=>array(),
+				"post_format"=>array()
+			)
 		);
 
 		$api->add(array(
@@ -133,7 +138,12 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"post_excerpt"=>"ex",
 			"post_status"=>"published",
 			"post_parent"=>NULL,
-			"menu_order"=>0
+			"menu_order"=>0,
+			"terms"=>array(
+				"category"=>array(),
+				"post_tag"=>array(),
+				"post_format"=>array()
+			)
 		);
 
 		try {
@@ -161,7 +171,12 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"post_status"=>"published",
 			"post_parent"=>"",
 			"menu_order"=>0,
-			"meta"=>array()
+			"meta"=>array(),
+			"terms"=>array(
+				"category"=>array(),
+				"post_tag"=>array(),
+				"post_format"=>array()
+			)
 		);
 
 		$api->add(array(
@@ -176,7 +191,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"slug"=>"some-slug"
 		));
 
-		$this->assertEquals("98caf22f76c2d40eed50cf642db03e8b",$resData["revision"]);
+		$this->assertEquals("167d1e25bd49aba0cf9bf69ea298378c",$resData["revision"]);
 
 		$data["post_content"]="some new content";
 
@@ -199,7 +214,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 		$api->put(array(
 			"slug"=>"some-slug",
 			"type"=>"post",
-			"baseRevision"=>"98caf22f76c2d40eed50cf642db03e8b",
+			"baseRevision"=>"167d1e25bd49aba0cf9bf69ea298378c",
 			"data"=>json_encode($data),
 			"key"=>"may_i_upload"
 		));
@@ -255,6 +270,8 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 	}
 
 	function test_doApiCall(){
+		$version=RemoteSyncPlugin::instance()->getProtocolVersion();
+
 		RemoteSyncPlugin::instance()->install();
 		$id=wp_insert_post(array(
 			"post_title"=>"hello",
@@ -268,19 +285,28 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 
 		// test listing with the right key
 		$ls_res1 = array();
-		$args = array("key"=>"test", "type"=>"post", "version"=>4);
+		$args = array("key"=>"test", "type"=>"post", "version"=>$version);
 		$ls_res1 = $api->doApiCall("ls", $args);
 		//print_r($ls_res1);
 
 		//test listing with the wrong key
 		$ls_res2 = array();
-		$args = array("key"=>"Wrong Key", "type"=>"post","version"=>4);
+		$args = array(
+			"key"=>"Wrong Key",
+			"type"=>"post",
+			"version"=>$version
+		);
 		$ls_res2 = $api->doApiCall("ls", $args);
 		//print_r($ls_res2);
 		
 		// test deleting with wrong key
 		$del_res1 = array();
-		$args = array("key"=>"wrong key", "type"=>"post", "slug"=>$ls_res1[0]["slug"],"version"=>4);
+		$args = array(
+			"key"=>"wrong key",
+			"type"=>"post",
+			"slug"=>$ls_res1[0]["slug"],
+			"version"=>$version
+		);
 		$caught=NULL;
 		try {
 			$del_res1 = $api->doApiCall("del", $args);
@@ -295,7 +321,12 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 
 		// test deleting with right key
 		$del_res1 = array();
-		$args = array("key"=>"test", "type"=>"post", "slug"=>$ls_res1[0]["slug"], "version"=>4);
+		$args = array(
+			"key"=>"test",
+			"type"=>"post",
+			"slug"=>$ls_res1[0]["slug"],
+			"version"=>$version
+		);
 		$del_res1 = $api->doApiCall("del", $args);
 		//print_r($del_res1);
 	}
