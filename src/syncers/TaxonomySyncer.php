@@ -15,6 +15,72 @@ class TaxonomySyncer extends AResourceSyncer {
 	}
 
 	/**
+	 * Set meta from a structured array.
+	 */
+	public static function setTermMeta($termId, $newMeta) {
+		$oldMeta=TaxonomySyncer::getStructuredTermMeta($termId);
+
+		foreach ($oldMeta as $old) {
+			$keep=FALSE;
+
+			foreach ($newMeta as $new)
+				if ($old["key"]==$new["key"] && $old["value"]==$new["value"])
+					$keep=TRUE;
+
+			if (!$keep)
+				delete_term_meta($termId,$old["key"],$old["value"]);
+		}
+
+		foreach ($newMeta as $new) {
+			$already=FALSE;
+
+			foreach ($oldMeta as $old)
+				if ($old["key"]==$new["key"] && $old["value"]==$new["value"])
+					$already=TRUE;
+
+			if (!$already)
+				add_term_meta($termId,$new["key"],$new["value"]);
+		}
+	}
+
+	/**
+	 * Get term meta.
+	 */
+	public static function getStructuredTermMeta($termId) {
+		$meta=get_term_meta($termId);
+		$structuredMeta=array();
+
+		foreach ($meta as $key=>$value) {
+			if ($key[0]!="_" && $key) {
+				if (is_array($value)) {
+					foreach ($value as $singleValue)
+						$structuredMeta[]=array(
+							"key"=>$key,
+							"value"=>$singleValue
+						);
+				}
+
+				else {
+					$structuredMeta[]=array(
+						"key"=>$key,
+						"value"=>$value
+					);
+				}
+			}
+		}
+
+		usort($structuredMeta, function($a,$b) {
+			$v=strcmp($a["key"],$b["key"]);
+			if ($v)
+				return $v;
+
+			return strcmp($a["value"],$b["value"]);
+		});
+
+		return $structuredMeta;
+	}
+
+	/**
 	 * Get weight.
 	 */
 	public function getResourceWeight($uniqueSlug) {
@@ -37,7 +103,6 @@ class TaxonomySyncer extends AResourceSyncer {
 
 	/**
 	 * List current local resources.
-	 * We will silently skip posts without a slug (they are probably drafts (?)).
 	 */
 	public function listResourceSlugs() {
 		global $wpdb;
@@ -95,7 +160,8 @@ class TaxonomySyncer extends AResourceSyncer {
 			"description"=>$row["description"],
 			"name"=>$row["name"],
 			"slug"=>$slug,
-			"parent"=>$parent
+			"parent"=>$parent,
+			"meta"=>TaxonomySyncer::getStructuredTermMeta($row["term_id"]),
 		);
 
 		return $data;
@@ -143,6 +209,8 @@ class TaxonomySyncer extends AResourceSyncer {
 		wp_update_term($term->term_id,$taxonomy,array(
 			"parent"=>$parentId
 		));
+
+		TaxonomySyncer::setTermMeta($term->term_id,$data["meta"]);
 	}
 
 	/**
