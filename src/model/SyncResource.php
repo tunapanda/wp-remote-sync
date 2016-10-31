@@ -463,6 +463,8 @@ class SyncResource extends WpRecord {
 	 * TODO: restore local data on failure.
 	 */
 	function updateLocalResource() {
+		$oldData=$this->getData();
+
 		$binaryDataFileName=$this->getRemoteResource()->downloadBinaryData();
 		$resourceInfo=new ResourceUpdateInfo(FALSE,
 			$this->getRemoteResource()->getData(),
@@ -470,7 +472,7 @@ class SyncResource extends WpRecord {
 		);
 
 		$this->getSyncer()->updateResource(
-			$this->getRemoteResource()->getSlug(),
+			$this->getSlug(),
 			$resourceInfo
 		);
 
@@ -481,11 +483,27 @@ class SyncResource extends WpRecord {
 		$this->baseRevision=$this->getLocalRevision();
 
 		if ($this->getRemoteRevision()!=$this->getLocalRevision()) {
-			throw new Exception(
-				"Local revision differ from remote after update\n".
-				"local: ".json_encode($this->getData())."\n".
-				"remote: ".json_encode($this->getRemoteResource()->getData())
+			$logger=RemoteSyncPlugin::instance()->getLogger();
+			if ($logger) {
+				$logger->log("**** Tried to update, but that changed the revision, slug=".$this->slug);
+				$logger->log("**** Remote:");
+				$logger->log(json_encode($this->getRemoteResource()->getData(),JSON_PRETTY_PRINT));
+				$logger->log("**** Local:");
+				$logger->log(json_encode($this->getData(),JSON_PRETTY_PRINT));
+			}
+
+			// TODO! save binary data also.
+			$resourceInfo=new ResourceUpdateInfo(FALSE,
+				$oldData,
+				NULL
 			);
+
+			$this->getSyncer()->updateResource(
+				$this->getSlug(),
+				$resourceInfo
+			);
+
+			throw new Exception("Local revision differ from remote after update");
 		}
 
 		$this->downloadAttachments();

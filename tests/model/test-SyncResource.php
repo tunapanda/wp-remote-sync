@@ -116,6 +116,74 @@ class SyncResourceTest extends WP_UnitTestCase {
 		$this->assertCount(1,$res);
 	}
 
+	// If the update of a resource fails, it will revert to the old version.
+	// TODO: also binary data should be updated
+	function test_failingResourceUpdate() {
+		RemoteSyncPlugin::instance()->setLogger(new DebugLogger());
+		RemoteSyncPlugin::instance()->syncers=array(new PostSyncer());
+		RemoteSyncPlugin::instance()->install();
+		update_option("rs_remote_site_url","http://example.com/");
+
+		$localPostId=wp_insert_post(array(
+			"post_name"=>"hello_world",
+			"post_title"=>"Hello World",
+		));
+
+		$remoteData=array(
+			"post_name"=>"hello_world",
+			"post_title"=>"Hello World Remote",
+			"something"=>"unexpected",
+			"post_type"=>"post",
+			"post_content"=>"hello, hello",
+			"post_excerpt"=>"hell...",
+			"post_status"=>"publish",
+			"post_parent"=>NULL,
+			"menu_order"=>0,
+			"meta"=>array(),
+			"terms"=>array(
+				"category"=>array(),
+				"post_tag"=>array(),
+				"post_format"=>array()
+			)
+		);
+		$remoteRevision=md5(json_encode($remoteData));
+
+		Curl::mockResult(array(
+			array("slug"=>"hello_world","revision"=>$remoteRevision,"weight"=>"")
+		));
+
+		Curl::mockResult(array(
+			"slug"=>"hello_world",
+			"revision"=>$remoteRevision,
+			"type"=>"post",
+			"data"=>$remoteData,
+			"attachments"=>array(),
+			"binary"=>FALSE
+		));
+
+		$resources=SyncResource::findAllForType(
+			"post",
+			SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE
+		);
+
+		$this->assertCount(1,$resources);
+		$res=$resources[0];
+		$caught=FALSE;
+
+		try {
+			$res->updateLocalResource();
+		}
+
+		catch (Exception $e) {
+			$caught=$e;
+		}
+
+		$this->assertNotFalse($caught);
+		$this->assertEquals("Local revision differ from remote after update",$caught->getMessage());
+		$post=get_post($localPostId);
+		$this->assertEquals("Hello World",$post->post_title);
+	}
+
 	// If the download doesn't work, the created resource should be deleted.
 	function test_createLocalResourceFailingDownload() {
 		global $wpdb;
@@ -178,62 +246,6 @@ class SyncResourceTest extends WP_UnitTestCase {
 
 		$this->assertTrue($caught);
 	}
-
-	// downloadAttachments is private
-	/*function test_downloadAttachments() {
-		global $wpdb;
-
-		RemoteSyncPlugin::instance()->syncers=array(new H5pSyncer());
-		RemoteSyncPlugin::instance()->install();
-
-		$data=array(
-			"test"=>"bla"
-		);
-
-		$rev=md5(json_encode($data));
-
-		Curl::mockResult(array(
-			array("slug"=>"the-slug","revision"=>$rev)
-		));
-
-		Curl::mockResult(array(
-			"slug"=>"the-slug",
-			"revision"=>$rev,
-			"type"=>"h5p",
-			"data"=>$data,
-			"attachments"=>array(
-				array(
-					"fileName"=>"an/attached/file.txt",
-					"fileSize"=>123
-				)
-			),
-			"binary"=>FALSE
-		));
-
-		update_option("rs_remote_site_url","http://example.com/");
-
-		$wpdb->query("INSERT INTO {$wpdb->prefix}h5p_contents (id,slug) values (777,'the-slug')");
-		if ($wpdb->last_error)
-			throw new Exception($wpdb->last_error);
-
-		$syncResources=SyncResource::findAllForType("h5p",
-			SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE);
-
-		$this->assertEquals(1,sizeof($syncResources));
-		$syncResource=$syncResources[0];
-
-		$upload_dir_info=wp_upload_dir();
-		$upload_base_dir=$upload_dir_info["basedir"];
-		if (file_exists($upload_base_dir."/an/attached/file.txt"))
-			unlink($upload_base_dir."/an/attached/file.txt");
-
-		Curl::mockResult("hello world");
-		$syncResource->downloadAttachments();
-
-		$this->assertTrue(file_exists($upload_base_dir."/an/attached/file.txt"));
-		$content=file_get_contents($upload_base_dir."/an/attached/file.txt");
-		$this->assertEquals($content,"hello world");
-	}*/
 
 	// Not sure why failing. 
 	/*function test_postedAttachments() {

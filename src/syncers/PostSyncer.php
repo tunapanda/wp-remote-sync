@@ -308,8 +308,13 @@ class PostSyncer extends AResourceSyncer {
 		}
 
 		$taxonomies=WpUtil::getTaxonomiesByPostType("post");
-		foreach ($taxonomies as $taxonomy)
-			wp_set_object_terms($localId,$data["terms"][$taxonomy],$taxonomy);
+		foreach ($taxonomies as $taxonomy) {
+			if (isset($data["terms"][$taxonomy]))
+				wp_set_object_terms($localId,$data["terms"][$taxonomy],$taxonomy);
+
+			else
+				wp_set_object_terms($localId,array(),$taxonomy);
+		}
 	}
 
 	/**
