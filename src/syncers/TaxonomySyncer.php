@@ -186,7 +186,7 @@ class TaxonomySyncer extends AResourceSyncer {
 			if (!$res)
 				throw new Exception("Unable to insert term");
 
-			$term=get_term($tes["term_id"]);
+			$term=get_term($res["term_id"]);
 		}
 
 		else {
