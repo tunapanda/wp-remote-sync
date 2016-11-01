@@ -196,6 +196,13 @@ class RemoteSyncPageController {
 						$syncResource->delete();
 					}
 
+					else if ($state==SyncResource::UP_TO_DATE) {
+						if ($syncResource->getLocalRevision()!=$syncResource->getBaseRevision()) {
+							$syncResource->baseRevision=$syncResource->getLocalRevision();
+							$syncResource->save();
+						}
+					}
+
 					else if ($state!=SyncResource::UP_TO_DATE) {
 						$actions=array();
 						foreach (self::$applicableActions[$state] as $action) {

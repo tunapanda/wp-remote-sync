@@ -8,7 +8,7 @@ require_once __DIR__."/src/controller/ScheduledSyncController.php";
 Plugin Name: Remote Sync
 Plugin URI: http://github.com/tunapanda/wp-remote-sync
 Description: Sync content with a remote site in a similar way to a distributed version control system.
-Version: 0.1.22
+Version: 0.1.23
 GitHub Plugin URI: https://github.com/tunapanda/wp-remote-sync
 */
 

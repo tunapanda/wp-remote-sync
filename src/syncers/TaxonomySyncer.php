@@ -178,32 +178,27 @@ class TaxonomySyncer extends AResourceSyncer {
 		$slug=$parts[1];
 		$data=$updateInfo->getData();
 
-		if ($updateInfo->isCreate()) {
+		$term=get_term_by("slug",$slug,$taxonomy);
+		if (!$term) {
 			$res=wp_insert_term($data["name"],$data["taxonomy"],array(
-				"description"=>$data["description"],
 				"slug"=>$data["slug"]
 			));
-			if (!$res)
+			if (!$res || $res instanceof \WP_Error)
 				throw new Exception("Unable to insert term");
 
 			$term=get_term($res["term_id"]);
 		}
 
-		else {
-			$term=get_term_by("slug",$slug,$taxonomy);
-			if (!$term)
-				throw new Exception("term not found for update");
-
-			wp_update_term($term->term_id,$taxonomy,array(
-				"name"=>$data["name"],
-				"description"=>$data["description"]
-			));
-		}
+		wp_update_term($term->term_id,$taxonomy,array(
+			"name"=>$data["name"],
+			"description"=>$data["description"]
+		));
 
 		$parentId=NULL;
 		if ($data["parent"]) {
 			$parentTerm=get_term_by("slug",$data["parent"],$taxonomy);
-			$parentId=$parentTerm->term_id;
+			if ($parentTerm)
+				$parentId=$parentTerm->term_id;
 		}
 
 		wp_update_term($term->term_id,$taxonomy,array(
