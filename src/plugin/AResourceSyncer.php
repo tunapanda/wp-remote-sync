@@ -88,4 +88,12 @@ abstract class AResourceSyncer {
 	function install() {
 		return;
 	}
+
+	/**
+	 * The syncer has a chance to override this and return false to
+	 * indicate that certain resources cannot be handled locally.
+	 */
+	function isResourceSyncable($slug) {
+		return TRUE;
+	}
 }

@@ -625,6 +625,14 @@ class SyncResource extends WpRecord {
 	}
 
 	/**
+	 * Check with the local syncer if this resource is syncable.
+	 * TODO: This is where to implement tagged syncing.
+	 */
+	public function isSyncable() {
+		return $this->getSyncer()->isResourceSyncable($this->slug);
+	}
+
+	/**
 	 * Get state.
 	 */
 	function getState() {

@@ -203,7 +203,8 @@ class RemoteSyncPageController {
 						}
 					}
 
-					else if ($state!=SyncResource::UP_TO_DATE) {
+					else if ($state!=SyncResource::UP_TO_DATE &&
+							$syncResource->isSyncable()) {
 						$actions=array();
 						foreach (self::$applicableActions[$state] as $action) {
 							$actions[$action]=self::$actionLabels[$action];

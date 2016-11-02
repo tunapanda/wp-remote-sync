@@ -15,6 +15,23 @@ class TaxonomySyncer extends AResourceSyncer {
 	}
 
 	/**
+	 * Is this resource syncable by the local system?
+	 */
+	public function isResourceSyncable($uniqueSlug) {
+		$parts=explode(":",$uniqueSlug);
+		$taxonomy=$parts[0];
+		$taxonomies=array_keys(get_taxonomies());
+
+		if ($taxonomy=="nav_menu")
+			return FALSE;
+
+		if (in_array($taxonomy,$taxonomies))
+			return TRUE;
+
+		return FALSE;
+	}
+
+	/**
 	 * Set meta from a structured array.
 	 */
 	public static function setTermMeta($termId, $newMeta) {
