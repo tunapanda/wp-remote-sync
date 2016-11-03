@@ -67,7 +67,10 @@ class SyncJob {
 				$logger->log($syncer->getType().": No remote support.");
 			}
 
-			$syncResources=array_merge($syncResources,$resourcesForType);
+			foreach ($resourcesForType as $syncResource) {
+				if ($syncResource->isSyncable())
+					$syncResources[]=$syncResource;
+			}
 		}
 
 		return $syncResources;
