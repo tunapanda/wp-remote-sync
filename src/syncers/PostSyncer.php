@@ -226,7 +226,8 @@ class PostSyncer extends AResourceSyncer {
 			"post_parent"=>$parentSlug,
 			"menu_order"=>$post->menu_order,
 			"meta"=>PostSyncer::getStructuredPostMeta($localId),
-			"terms"=>$termSlugs
+			"terms"=>$termSlugs,
+			"comment_status"=>$post->comment_status
 		);
 
 		return $data;
@@ -278,7 +279,8 @@ class PostSyncer extends AResourceSyncer {
 				"post_excerpt"=>$data["post_excerpt"],
 				"post_status"=>$data["post_status"],
 				"post_parent"=>$this->getIdBySlug($data["post_parent"]),
-				"menu_order"=>$data["menu_order"]
+				"menu_order"=>$data["menu_order"],
+				"comment_status"=>$data["comment_status"]
 			));
 
 			PostSyncer::setPostMeta($localId,$data["meta"]);
@@ -301,6 +303,7 @@ class PostSyncer extends AResourceSyncer {
 			$post->post_status=$data["post_status"];
 			$post->post_parent=$this->getIdBySlug($data["post_parent"]);
 			$post->menu_order=$data["menu_order"];
+			$post->comment_status=$data["comment_status"];
 
 			PostSyncer::setPostMeta($localId,$data["meta"]);
 
