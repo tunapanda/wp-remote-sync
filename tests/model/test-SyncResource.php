@@ -140,6 +140,7 @@ class SyncResourceTest extends WP_UnitTestCase {
 			"post_parent"=>NULL,
 			"menu_order"=>0,
 			"meta"=>array(),
+			"comment_status"=>"open",
 			"terms"=>array(
 				"category"=>array(),
 				"post_tag"=>array(),

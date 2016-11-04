@@ -84,6 +84,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"post_status"=>"published",
 			"post_parent"=>"",
 			"menu_order"=>0,
+			"comment_status"=>"open",
 			"meta"=>array(),
 			"terms"=>array(
 				"category"=>array(),
@@ -139,6 +140,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"post_status"=>"published",
 			"post_parent"=>NULL,
 			"menu_order"=>0,
+			"comment_status"=>"open",
 			"terms"=>array(
 				"category"=>array(),
 				"post_tag"=>array(),
@@ -172,6 +174,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"post_parent"=>"",
 			"menu_order"=>0,
 			"meta"=>array(),
+			"comment_status"=>"open",
 			"terms"=>array(
 				"category"=>array(),
 				"post_tag"=>array(),
@@ -191,7 +194,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 			"slug"=>"some-slug"
 		));
 
-		$this->assertEquals("167d1e25bd49aba0cf9bf69ea298378c",$resData["revision"]);
+		$this->assertEquals("47f6a529454f88b125957f7ce1bec40a",$resData["revision"]);
 
 		$data["post_content"]="some new content";
 
@@ -214,7 +217,7 @@ class RemoteSyncApiTest extends WP_UnitTestCase {
 		$api->put(array(
 			"slug"=>"some-slug",
 			"type"=>"post",
-			"baseRevision"=>"167d1e25bd49aba0cf9bf69ea298378c",
+			"baseRevision"=>"47f6a529454f88b125957f7ce1bec40a",
 			"data"=>json_encode($data),
 			"key"=>"may_i_upload"
 		));

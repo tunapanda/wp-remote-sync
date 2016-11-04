@@ -94,29 +94,11 @@ class WpCliController extends Singleton {
 			return;
 		}
 
+		RemoteSyncPlugin::instance()->setLogger(new WpCliLogger());
 		WP_CLI::log("Checking resources on remote site...");
 
-		$syncResources=array();
-		$syncers=RemoteSyncPlugin::instance()->getEnabledSyncers();
-		foreach ($syncers as $syncer) {
-			$resourcesForType=array();
-			try {
-				$resourcesForType=SyncResource::findAllForType(
-					$syncer->getType(),
-					SyncResource::POPULATE_LOCAL|SyncResource::POPULATE_REMOTE
-				);
-			}
-
-			catch (Exception $e) {
-				if ($e->getMessage()!="Resource type not enabled")
-					throw $e;
-
-				WP_CLI::warning($syncer->getType().": No remote support.");
-			}
-
-			$syncResources=array_merge($syncResources,$resourcesForType);
-		}
-
+		$job=new SyncJob();
+		$syncResources=$job->getSyncResources();
 		$table=array();
 
 		foreach ($syncResources as $syncResource) {
