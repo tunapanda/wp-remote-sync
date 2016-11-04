@@ -339,6 +339,7 @@ class RemoteSyncApi {
 	 * in doApiCall.
 	 */
 	public function handleApiCall($call, $params) {
+		set_time_limit(0);
 		set_exception_handler(array($this,"handleException"));
 		$res = $this->doApiCall($call, $params);
 		echo json_encode($res);
