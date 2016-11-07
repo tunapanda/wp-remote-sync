@@ -1,3 +1,4 @@
 tests/wordpress
 tests/wordpress-tests-lib
 bin/install-wp-tests-local.sh
+attic
