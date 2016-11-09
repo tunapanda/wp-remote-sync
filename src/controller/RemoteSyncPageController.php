@@ -193,7 +193,8 @@ class RemoteSyncPageController {
 					$state=$syncResource->getState();
 
 					if ($state==SyncResource::GARBAGE) {
-						$syncResource->delete();
+						if ($syncResource->id)
+							$syncResource->delete();
 					}
 
 					else if ($state==SyncResource::UP_TO_DATE) {
