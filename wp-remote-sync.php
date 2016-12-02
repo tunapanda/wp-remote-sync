@@ -122,7 +122,7 @@ function rs_activate() {
  * Deactivate.
  */
 function rs_deactivate() {
-	wp_clear_scheduled_hook('rs_sheduled_sync');
+	wp_clear_scheduled_hook('rs_scheduled_sync');
 }
 
 /**
